@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+#
+# 2020 Toazd cpu_usage.sh
+#
+# Purpose:
+#   Parse mpstat output (the last line - avg idle%) and convert it to usage%
+#   Requires mpstat (Arch package sysstat)
+#
+################################################################################
+
+iaMPSTAT=()
+iINTERVAL=1
+iREPORTS=1
+sAVG_LINE=""
+
+# map the output of mpstat into an indexed array
+mapfile -s 2 -t <<< "$(mpstat $iINTERVAL $iREPORTS --dec=2)" iaMPSTAT
+
+# we only want the last line which is the same no matter how many reports are chosen (index total - 1)
+sAVG_LINE="${iaMPSTAT[${#iaMPSTAT[@]}-1]}"
+# remove all spaces including anything to the left of them
+sAVG_LINE="${sAVG_LINE##* }"
+
+# round to 0 decimals (to avoid showing extraneous zeros *.0%), left bound the field (aligns better with icons/glyphs)
+sCPU_USAGE="$(printf '%-.0f' "$(bc -l <<< 100-"${sAVG_LINE}")")%"
+
+if [[ ${sCPU_USAGE:0:1} -eq 0 ]]; then
+    echo "<1%"
+else
+    echo "$sCPU_USAGE"
+fi
