@@ -29,7 +29,7 @@ iCOUNTER=0
 # TODO remove after testing is "done"
 #rm -r "$sMOVE_TO_PATH"
 # NOTE the debug.output.csv file will show up in the results if it is in the sSEARCH_PATH
-printf "%s\n" "DupTestResult,sFILENAME,sBASENAME_NO_EXT,sBASENAME,sEXT,sLOWERCASE_EXT,sMOVE_TO_PATH,sFILE" > debug.output.csv # TODO remove debug stuff
+printf "%s\n" "CopySuccess,DupTestResult,sFILENAME,sBASENAME_NO_EXT,sBASENAME,sEXT,sLOWERCASE_EXT,sMOVE_TO_PATH,sFILE" > debug.output.csv # TODO remove debug stuff
 
 # check for write access to the move/copy path
 # NOTE if sMOVE_TO_PATH is NULL here, then "./" was specified
@@ -89,8 +89,12 @@ while IFS= read -r sFILENAME; do
             # Copy the file to its respective path
             # If the copy is successful iterate the file counter
             # TODO change cp to mv when testing is "done"
-            cp "$sFILENAME" "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}" && iFILE_COUNTER=$((iFILE_COUNTER+1))
-            printf "%s\n" "False,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH" >> debug.output.csv # TODO remove debug stuff
+            if cp "$sFILENAME" "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}"; then
+                iFILE_COUNTER=$((iFILE_COUNTER+1))
+                printf "%s\n" "True,False,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH" >> debug.output.csv # TODO remove debug stuff
+            else
+                printf "%s\n" "False,False,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH" >> debug.output.csv # TODO remove debug stuff
+            fi
         else
             # An existing file with the same was found in the sMOVE_TO_PATH/sLOWERCASE_EXT
             #####echo "Duplicate file name detected: $sFILENAME"
@@ -126,11 +130,20 @@ while IFS= read -r sFILENAME; do
             # Name the file based on whether it is a dotfile or not
             # NOTE if sFILENAME is a dotfile, then sEXT contains it's name
             if [[ -n $sBASENAME_NO_EXT ]]; then
-                cp "$sFILENAME" "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}/${sBASENAME_NO_EXT}_${RANDOM}${RANDOM}.${sEXT}" && iFILE_COUNTER=$((iFILE_COUNTER+1))
+                if cp "$sFILENAME" "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}/${sBASENAME_NO_EXT}_${RANDOM}${RANDOM}.${sEXT}"; then
+                    iFILE_COUNTER=$((iFILE_COUNTER+1))
+                    printf "%s\n" "True,False,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH" >> debug.output.csv # TODO remove debug stuff
+                else
+                    printf "%s\n" "False,False,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH" >> debug.output.csv # TODO remove debug stuff
+                fi
             elif [[ -z $sBASENAME_NO_EXT ]]; then
-                cp "$sFILENAME" "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}/.${sEXT}_${RANDOM}${RANDOM}" && iFILE_COUNTER=$((iFILE_COUNTER+1))
+                if cp "$sFILENAME" "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}/.${sEXT}_${RANDOM}${RANDOM}"; then
+                    iFILE_COUNTER=$((iFILE_COUNTER+1))
+                    printf "%s\n" "True,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH,$sFILE" >> debug.output.csv # TODO remove debug stuff
+                else
+                    printf "%s\n" "False,False,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH" >> debug.output.csv # TODO remove debug stuff
+                fi
             fi
-            printf "%s\n" "True,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH,$sFILE" >> debug.output.csv # TODO remove debug stuff
         fi
     else
         echo "No read access to: $sFILENAME"
@@ -139,12 +152,13 @@ done < <(find "${sSEARCH_PATH}/" -type f -not -path "*$sMOVE_TO_PATH*" -not -nam
 
 # Report what happened
 if [[ $iFILE_COUNTER -eq 0 && $iCOUNTER -gt 1 ]]; then
-    printf "\r\033[0K%s\n" "$iCOUNTER files checked. No new or unique files found."
-elif [[ $iFILE_COUNTER -gt 0 && $iCOUNTER -gt 1 ]]; then
-    printf "\r\033[0K%s\n" "${iFILE_COUNTER}/$iCOUNTER files checked were new and unique."
+    printf "\r\033[0K%s\n" "$iCOUNTER files checked. No new, unique files found."
+elif [[ $iFILE_COUNTER -ge 1 && $iCOUNTER -gt 1 ]]; then
     if [[ $iFILE_COUNTER -eq 1 ]]; then
+        printf "\r\033[0K%s\n" "$iCOUNTER files checked. $iFILE_COUNTER is new and unique."
         echo "It was copied to $PWD/$sMOVE_TO_PATH"
     elif [[ $iFILE_COUNTER -gt 1 ]]; then
+        printf "\r\033[0K%s\n" "$iCOUNTER files checked. $iFILE_COUNTER are new and unique."
         echo "They were copied to $PWD/$sMOVE_TO_PATH"
     fi
 elif [[ $iCOUNTER -eq 0 ]]; then
