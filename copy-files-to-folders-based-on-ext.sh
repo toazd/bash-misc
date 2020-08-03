@@ -2,7 +2,7 @@
 #
 # NOTE cp is used instead of mv while testing
 # NOTE the path files are copied/moved to and files in it are ignored during searching (in case the sMOVE_TO_PATH is within sSEARCH_PATH)
-# NOTE the script that is run is ignored during file searching TODO more testing to ensure the check works in all cases
+# NOTE the script that is run is ignored during file searching
 # NOTE duplicate file checks are based first on case-sensitive file names, followed by checksums IF the names match
 #      this means that if you have files with the same contents, but with different names they will be copied
 #
@@ -11,7 +11,7 @@
 #      eg. "0" and ".546-Release"
 #
 
-shopt -s globstar nullglob
+shopt -s nullglob dotglob
 
 # TODO parameter handling and usage output
 # All parameters are optional
@@ -27,7 +27,8 @@ iFILE_COUNTER=0
 
 # TODO remove after testing is "done"
 #rm -r "$sMOVE_TO_PATH"
-printf "%s\n" "sFILENAME,sBASENAME_NO_EXT,sBASENAME,sEXT,sLOWERCASE_EXT,sMOVE_TO_PATH" > debug.output.csv
+# NOTE the debug.output.csv file will show up in the results if it is in the sSEARCH_PATH
+printf "%s\n" "DupTestResult,sFILENAME,sBASENAME_NO_EXT,sBASENAME,sEXT,sLOWERCASE_EXT,sMOVE_TO_PATH,sFILE" > debug.output.csv # TODO remove debugg stuff
 
 # check for write access to the move/copy path
 # NOTE if sMOVE_TO_PATH is NULL here, then "./" was specified
@@ -38,8 +39,7 @@ else
     [[ ! -w ${sMOVE_TO_PATH%%/*} ]] && { echo "No write access to ${sMOVE_TO_PATH%%/*}"; exit 1; }
 fi
 
-# TODO find out exactly why * does not match dotfiles by itself
-for sFILENAME in "$sSEARCH_PATH"/**/{*,.*}; do
+while IFS= read -r sFILENAME; do
 
     # If no files are found, having nullglob turned on causes the pattern to expand to NULL instead of itself
     [[ -z $sFILENAME ]] && continue
@@ -48,18 +48,8 @@ for sFILENAME in "$sSEARCH_PATH"/**/{*,.*}; do
     sFILENAME=${sFILENAME//.\/}
 
     # Filter through the results
-    # If sFILENAME is not a folder (eg. "." & "..") and
-    # If the basename of the file does not contain a dot "." and
     # If we have read access to the file (TODO change to -w for move) and
-    # the file path and name (in all lower-case) matches the pattern *.extension (all lower-case) and
-    # If the move path is not part of the file name (exclude move path and all files in it) and
-    # If the filename is not equal to the script name (with dot forward-slash "./" removed)
-    if [[ ! -d $sFILENAME && \
-          ${sFILENAME##*/} == *.* && \
-          -r $sFILENAME && \
-          ${sFILENAME,,} == *.${sFILE_EXT,,} && \
-          ! $sFILENAME == *$sMOVE_TO_PATH* && \
-          ! $sFILENAME == *${0//.\/} ]]; then
+    if [[ -r $sFILENAME ]]; then
 
         # Get the basename of the file not including the extension
         sBASENAME_NO_EXT=${sFILENAME%.*}
@@ -77,59 +67,60 @@ for sFILENAME in "$sSEARCH_PATH"/**/{*,.*}; do
         # Create the path to move the file to using the extension,
         # converting the extension to all lower-case to avoid creating
         # extraneous folders
-        # NOTE This means that files with extensions that are the same characters
-        # but differ in case will be put inside the same folder irregardless of extension case
-        # eg. "file.txt", "file.TxT", "file.TXt", "file.TXT", and "file.tXT" will all be put
-        # into the same folder named "txt"
-        # If you don't want that behavior, change sLOWERCASE_EXT to sEXT where appropriate below
         mkdir -p "$sMOVE_TO_PATH/$sLOWERCASE_EXT"
-        printf "%s\n" "$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH" >> debug.output.csv # TODO remove debug stuff
 
         # Check for a possible file name conflict
+        # No existing file with the same name was found
         if [[ ! -f "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}/${sBASENAME}" ]]; then
-
-            # If the path exists and we can write to it, copy the file to its respective path
+            # Copy the file to its respective path
             # If the copy is successful iterate the file counter
             # TODO change cp to mv when testing is "done"
-            [[ -d "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}" && -w "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}" ]] && \
-                cp "$sFILENAME" "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}" && iFILE_COUNTER=$((iFILE_COUNTER+1))
+            cp "$sFILENAME" "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}" && iFILE_COUNTER=$((iFILE_COUNTER+1))
+            printf "%s\n" "False,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH" >> debug.output.csv # TODO remove debug stuff
         else
-
-            # The name of a file in the same move path we want to copy/move to matches the current file
+            # An existing file with the same was found in the sMOVE_TO_PATH/sLOWERCASE_EXT
             echo "Duplicate file name detected: $sFILENAME"
 
-            # If they are hardlinks they are already the same, no need to compare checksums
+            # If they are hardlinks they are already the same, no need to compare
             [[  $sFILENAME -ef "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}/${sBASENAME}" ]] && {
                 echo "Hardlink detected, skipping copy"
                 continue
             }
 
-            # Compare checksums and see if there is an exact copy (content but not name wise) already
-            # NOTE to narrow down the number of files to compare against, not all files are checked
-            # TODO determine an appropriate scope for the comparison
-            # TODO different checksum algorithm?
-            #sDUPLICATE=$(sha512sum "$sFILENAME")
-            #for sFILE in "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}/${sBASENAME_NO_EXT}"*; do
-            #    sEXISTING=$(sha512sum "$sFILE")
-            #    if [[ ${sDUPLICATE%% *} = "${sEXISTING%% *}" ]]; then
-            #        echo "Exact copy found at: $sFILE, skipping copy"
-            #        continue 2
-            #    fi
-            #done
-
-            for sFILE in "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}/${sBASENAME_NO_EXT}"*; do
-            #for sFILE in "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}"/*; do
-                if cmp -s "$sFILENAME" "$sFILE"; then
-                    echo "Exact copy found at: $sFILE, skipping copy"
-                    continue 2
-                fi
-            done
+            # Attempt to narrow down the files to compare against
+            # NOTE not all files are checked in the destination path. Files with duplicate
+            # contents but sufficiently different names will still be copied
+            # If sBASENAME_NO_EXT=NULL then the file name begins with a dot "."
+            if [[ -n $sBASENAME_NO_EXT ]]; then
+                for sFILE in "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}/${sBASENAME_NO_EXT}"*; do
+                    if cmp -s "$sFILENAME" "$sFILE"; then
+                        echo "Exact copy found at: $sFILE, skipping copy"
+                        continue 2
+                    fi
+                done
+            elif [[ -z $sBASENAME_NO_EXT ]]; then
+                for sFILE in "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}/${sBASENAME}"*; do
+                    if cmp -s "$sFILENAME" "$sFILE"; then
+                        echo "Exact copy found at: $sFILE, skipping copy"
+                        continue 2
+                    fi
+                done
+            fi
 
             echo "Duplicate file is unique, copying but renaming with unique identifier"
-            cp "$sFILENAME" "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}/${sBASENAME_NO_EXT}_${RANDOM}${RANDOM}${RANDOM}.${sEXT}" && iFILE_COUNTER=$((iFILE_COUNTER+1))
+            # Name the file based on whether it is a dotfile or not
+            # NOTE if sFILENAME is a dotfile, then sEXT contains it's name
+            if [[ -n $sBASENAME_NO_EXT ]]; then
+                cp "$sFILENAME" "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}/${sBASENAME_NO_EXT}_${RANDOM}${RANDOM}${RANDOM}.${sEXT}" && iFILE_COUNTER=$((iFILE_COUNTER+1))
+            elif [[ -z $sBASENAME_NO_EXT ]]; then
+                cp "$sFILENAME" "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}/.${sEXT}_${RANDOM}${RANDOM}${RANDOM}" && iFILE_COUNTER=$((iFILE_COUNTER+1))
+            fi
+            printf "%s\n" "True,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH,$sFILE" >> debug.output.csv # TODO remove debug stuff
         fi
+    else
+        echo "No read access to: $sFILENAME"
     fi
-done
+done < <(find "${sSEARCH_PATH}/" -type f -not -path "*$sMOVE_TO_PATH*" -not -iname "*${0//.\/}*" -iname "*.${sFILE_EXT}" 2>/dev/null)
 
 # TODO change "copied" to "moved"
 echo "$iFILE_COUNTER files copied"
