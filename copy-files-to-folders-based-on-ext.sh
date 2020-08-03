@@ -27,6 +27,7 @@ iFILE_COUNTER=0
 
 # TODO remove after testing is "done"
 #rm -r "$sMOVE_TO_PATH"
+printf "%s\n" "sFILENAME,sBASENAME_NO_EXT,sBASENAME,sEXT,sLOWERCASE_EXT,sMOVE_TO_PATH" > debug.output.csv
 
 # check for write access to the move/copy path
 # NOTE if sMOVE_TO_PATH is NULL here, then "./" was specified
@@ -48,16 +49,17 @@ for sFILENAME in "$sSEARCH_PATH"/**/{*,.*}; do
 
     # Filter through the results
     # If sFILENAME is not a folder (eg. "." & "..") and
-    # If we have read access to the file and TODO change to -w for move
+    # If the basename of the file does not contain a dot "." and
+    # If we have read access to the file (TODO change to -w for move) and
     # the file path and name (in all lower-case) matches the pattern *.extension (all lower-case) and
     # If the move path is not part of the file name (exclude move path and all files in it) and
     # If the filename is not equal to the script name (with dot forward-slash "./" removed)
     if [[ ! -d $sFILENAME && \
+          ${sFILENAME##*/} == *.* && \
           -r $sFILENAME && \
           ${sFILENAME,,} == *.${sFILE_EXT,,} && \
           ! $sFILENAME == *$sMOVE_TO_PATH* && \
-          ! $sFILENAME == *${0//.\/} \
-          ]]; then
+          ! $sFILENAME == *${0//.\/} ]]; then
 
         # Get the basename of the file not including the extension
         sBASENAME_NO_EXT=${sFILENAME%.*}
@@ -81,6 +83,7 @@ for sFILENAME in "$sSEARCH_PATH"/**/{*,.*}; do
         # into the same folder named "txt"
         # If you don't want that behavior, change sLOWERCASE_EXT to sEXT where appropriate below
         mkdir -p "$sMOVE_TO_PATH/$sLOWERCASE_EXT"
+        printf "%s\n" "$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH" >> debug.output.csv # TODO remove debug stuff
 
         # Check for a possible file name conflict
         if [[ ! -f "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}/${sBASENAME}" ]]; then
@@ -105,14 +108,23 @@ for sFILENAME in "$sSEARCH_PATH"/**/{*,.*}; do
             # NOTE to narrow down the number of files to compare against, not all files are checked
             # TODO determine an appropriate scope for the comparison
             # TODO different checksum algorithm?
-            sDUPLICATE=$(sha512sum "$sFILENAME")
+            #sDUPLICATE=$(sha512sum "$sFILENAME")
+            #for sFILE in "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}/${sBASENAME_NO_EXT}"*; do
+            #    sEXISTING=$(sha512sum "$sFILE")
+            #    if [[ ${sDUPLICATE%% *} = "${sEXISTING%% *}" ]]; then
+            #        echo "Exact copy found at: $sFILE, skipping copy"
+            #        continue 2
+            #    fi
+            #done
+
             for sFILE in "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}/${sBASENAME_NO_EXT}"*; do
-                sEXISTING=$(sha512sum "$sFILE")
-                if [[ ${sDUPLICATE%% *} = "${sEXISTING%% *}" ]]; then
+            #for sFILE in "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}"/*; do
+                if cmp -s "$sFILENAME" "$sFILE"; then
                     echo "Exact copy found at: $sFILE, skipping copy"
                     continue 2
                 fi
             done
+
             echo "Duplicate file is unique, copying but renaming with unique identifier"
             cp "$sFILENAME" "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}/${sBASENAME_NO_EXT}_${RANDOM}${RANDOM}${RANDOM}.${sEXT}" && iFILE_COUNTER=$((iFILE_COUNTER+1))
         fi
