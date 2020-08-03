@@ -164,5 +164,5 @@ elif [[ $iFILE_COUNTER -ge 1 && $iCOUNTER -gt 1 ]]; then
 elif [[ $iCOUNTER -eq 0 ]]; then
     printf "\r\033[0K%s\n" "No files found in $sSEARCH_PATH"
 else
-    printf "\r\033[0K%s\n" "An unknown error occured"
+    printf "\n%s\n" "An unknown error occured: \"$iCOUNTER\" \"$iFILE_COUNTER\""
 fi
