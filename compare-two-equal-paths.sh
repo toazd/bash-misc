@@ -66,38 +66,38 @@ for (( iCOUNTER=0; iCOUNTER<${#iaFILES_A[@]}; iCOUNTER++ )); do
     #
     case ${sALGO,,} in
         ("md5")
-            sFILE_CHECKSUM_A="$(md5sum "${iaFILES_A[$iCOUNTER]}")"
-            sFILE_CHECKSUM_A="${sFILE_CHECKSUM_A%%[[:blank:]]*}"
+            sFILE_CHECKSUM_A=$(md5sum "${iaFILES_A[$iCOUNTER]}")
+            sFILE_CHECKSUM_A=${sFILE_CHECKSUM_A%%[[:blank:]]*}
 
-            sFILE_CHECKSUM_B="$(md5sum "${iaFILES_B[$iCOUNTER]}")"
-            sFILE_CHECKSUM_B="${sFILE_CHECKSUM_B%%[[:blank:]]*}"
+            sFILE_CHECKSUM_B=$(md5sum "${iaFILES_B[$iCOUNTER]}")
+            sFILE_CHECKSUM_B=${sFILE_CHECKSUM_B%%[[:blank:]]*}
             #echo "$sFILE_CHECKSUM_A <==> $sFILE_CHECKSUM_B"
             [[ $sFILE_CHECKSUM_A = "$sFILE_CHECKSUM_B" ]] || echo "${iaFILES_A[$iCOUNTER]} != ${iaFILES_B[$iCOUNTER]}"
         ;;
         ("sha1")
-            sFILE_CHECKSUM_A="$(sha1sum "${iaFILES_A[$iCOUNTER]}")"
-            sFILE_CHECKSUM_A="${sFILE_CHECKSUM_A%%[[:blank:]]*}"
+            sFILE_CHECKSUM_A=$(sha1sum "${iaFILES_A[$iCOUNTER]}")
+            sFILE_CHECKSUM_A=${sFILE_CHECKSUM_A%%[[:blank:]]*}
 
-            sFILE_CHECKSUM_B="$(sha1sum "${iaFILES_B[$iCOUNTER]}")"
-            sFILE_CHECKSUM_B="${sFILE_CHECKSUM_B%%[[:blank:]]*}"
+            sFILE_CHECKSUM_B=$(sha1sum "${iaFILES_B[$iCOUNTER]}")
+            sFILE_CHECKSUM_B=${sFILE_CHECKSUM_B%%[[:blank:]]*}
             #echo "$sFILE_CHECKSUM_A <==> $sFILE_CHECKSUM_B"
             [[ $sFILE_CHECKSUM_A = "$sFILE_CHECKSUM_B" ]] || echo "${iaFILES_A[$iCOUNTER]} != ${iaFILES_B[$iCOUNTER]}"
         ;;
         ("sha256")
-            sFILE_CHECKSUM_A="$(sha256sum "${iaFILES_A[$iCOUNTER]}")"
-            sFILE_CHECKSUM_A="${sFILE_CHECKSUM_A%%[[:blank:]]*}"
+            sFILE_CHECKSUM_A=$(sha256sum "${iaFILES_A[$iCOUNTER]}")
+            sFILE_CHECKSUM_A=${sFILE_CHECKSUM_A%%[[:blank:]]*}
 
-            sFILE_CHECKSUM_B="$(sha256sum "${iaFILES_B[$iCOUNTER]}")"
-            sFILE_CHECKSUM_B="${sFILE_CHECKSUM_B%%[[:blank:]]*}"
+            sFILE_CHECKSUM_B=$(sha256sum "${iaFILES_B[$iCOUNTER]}")
+            sFILE_CHECKSUM_B=${sFILE_CHECKSUM_B%%[[:blank:]]*}
             #echo "$sFILE_CHECKSUM_A <==> $sFILE_CHECKSUM_B"
             [[ $sFILE_CHECKSUM_A = "$sFILE_CHECKSUM_B" ]] || echo "${iaFILES_A[$iCOUNTER]} != ${iaFILES_B[$iCOUNTER]}"
         ;;
         ("sha512")
-            sFILE_CHECKSUM_A="$(sha512sum "${iaFILES_A[$iCOUNTER]}")"
-            sFILE_CHECKSUM_A="${sFILE_CHECKSUM_A%%[[:blank:]]*}"
+            sFILE_CHECKSUM_A=$(sha512sum "${iaFILES_A[$iCOUNTER]}")
+            sFILE_CHECKSUM_A=${sFILE_CHECKSUM_A%%[[:blank:]]*}
 
-            sFILE_CHECKSUM_B="$(sha512sum "${iaFILES_B[$iCOUNTER]}")"
-            sFILE_CHECKSUM_B="${sFILE_CHECKSUM_B%%[[:blank:]]*}"
+            sFILE_CHECKSUM_B=$(sha512sum "${iaFILES_B[$iCOUNTER]}")
+            sFILE_CHECKSUM_B=${sFILE_CHECKSUM_B%%[[:blank:]]*}
             #echo "$sFILE_CHECKSUM_A <==> $sFILE_CHECKSUM_B"
             [[ $sFILE_CHECKSUM_A = "$sFILE_CHECKSUM_B" ]] || echo "${iaFILES_A[$iCOUNTER]} != ${iaFILES_B[$iCOUNTER]}"
         ;;
