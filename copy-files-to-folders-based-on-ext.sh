@@ -28,7 +28,7 @@ iFILE_COUNTER=0
 # TODO remove after testing is "done"
 #rm -r "$sMOVE_TO_PATH"
 # NOTE the debug.output.csv file will show up in the results if it is in the sSEARCH_PATH
-printf "%s\n" "DupTestResult,sFILENAME,sBASENAME_NO_EXT,sBASENAME,sEXT,sLOWERCASE_EXT,sMOVE_TO_PATH,sFILE" > debug.output.csv # TODO remove debugg stuff
+printf "%s\n" "DupTestResult,sFILENAME,sBASENAME_NO_EXT,sBASENAME,sEXT,sLOWERCASE_EXT,sMOVE_TO_PATH,sFILE" > debug.output.csv # TODO remove debug stuff
 
 # check for write access to the move/copy path
 # NOTE if sMOVE_TO_PATH is NULL here, then "./" was specified
