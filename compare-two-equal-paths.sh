@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Compare two "equal" directory trees and compare the files using md5, sha1sum , sha256sum, or sha512sum
-# reporting if any are not exactly the same. If a log is desired pipe the output through tee or directly to a file descriptor.
+# reporting if any are not exactly the same. If a log is desired pipe the output through tee or directly to a file
 #
 
 # Shell options
@@ -9,10 +9,10 @@ shopt -s extglob
 set -eEu
 
 # Initialize global variables
-sSEARCH_PATH_A="${1:-""}"
-sSEARCH_PATH_B="${2:-""}"
-sALGO="${3:-"md5"}"
-sFILE_EXT="${4:-"**"}"
+sSEARCH_PATH_A=${1-""}
+sSEARCH_PATH_B=${2-""}
+sALGO=${3:-"md5"}
+sFILE_EXT=${4:-"**"}
 sFILE_CHECKSUM_A=""
 sFILE_CHECKSUM_B=""
 iaFILES_A=()
@@ -35,8 +35,8 @@ ShowUsage() {
 [[ $# -lt 2 || $# -gt 3 ]] && ShowUsage
 
 # Get the full, real path of the paths supplied as parameters
-sSEARCH_PATH_A="$(realpath -q "$sSEARCH_PATH_A")"
-sSEARCH_PATH_B="$(realpath -q "$sSEARCH_PATH_B")"
+sSEARCH_PATH_A=$(realpath -q "$sSEARCH_PATH_A")
+sSEARCH_PATH_B=$(realpath -q "$sSEARCH_PATH_B")
 
 # Check that both search paths are actually paths (eg. not files)
 [[ -d $sSEARCH_PATH_A && -d $sSEARCH_PATH_B ]] || ShowUsage
@@ -48,18 +48,18 @@ sSEARCH_PATH_B="$(realpath -q "$sSEARCH_PATH_B")"
 echo -e "$(date +%c)\nComparing (${sFILE_EXT}/${sALGO^^}):\n${sSEARCH_PATH_A} <==> ${sSEARCH_PATH_B}\n"
 
 if [[ $sFILE_EXT = "**" ]]; then
-    mapfile -t <<< "$(find "$sSEARCH_PATH_A" -type f -iwholename "*" | LC_ALL=C sort -u)" iaFILES_A
-    mapfile -t <<< "$(find "$sSEARCH_PATH_B" -type f -iwholename "*" | LC_ALL=C sort -u)" iaFILES_B
+    mapfile -t <<< "$(find "$sSEARCH_PATH_A" -type f -iwholename "*" | LC_ALL=C sort -uf)" iaFILES_A
+    mapfile -t <<< "$(find "$sSEARCH_PATH_B" -type f -iwholename "*" | LC_ALL=C sort -uf)" iaFILES_B
 else
-    mapfile -t <<< "$(find "$sSEARCH_PATH_A" -type f -iwholename "*.${sFILE_EXT}" | LC_ALL=C sort -u)" iaFILES_A
-    mapfile -t <<< "$(find "$sSEARCH_PATH_B" -type f -iwholename "*.${sFILE_EXT}" | LC_ALL=C sort -u)" iaFILES_B
+    mapfile -t <<< "$(find "$sSEARCH_PATH_A" -type f -iwholename "*.${sFILE_EXT}" | LC_ALL=C sort -uf)" iaFILES_A
+    mapfile -t <<< "$(find "$sSEARCH_PATH_B" -type f -iwholename "*.${sFILE_EXT}" | LC_ALL=C sort -uf)" iaFILES_B
 fi
 
 #
-[[ ${#iaFILES_A[@]} = "${#iaFILES_B[@]}" ]] || { echo "Paths do not have an equal number of files (${#iaFILES_A[@]} vs ${#iaFILES_B[@]})"; exit; }
+[[ ${#iaFILES_A[@]} = "${#iaFILES_B[@]}" ]] || { echo "Paths do not have an equal number of files (${#iaFILES_A[@]} vs ${#iaFILES_B[@]})"; exit 1; }
 
 #
-[[ "${#iaFILES_A[@]}" -eq 1 ]] && { echo "No files found"; exit; }
+[[ "${#iaFILES_A[@]}" -eq 1 ]] && { echo "No files found"; exit 0; }
 
 #
 for (( iCOUNTER=0; iCOUNTER<${#iaFILES_A[@]}; iCOUNTER++ )); do
