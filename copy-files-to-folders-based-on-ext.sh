@@ -20,8 +20,8 @@ shopt -s nullglob dotglob
 # Third parameter = /path/to/copyto (default: "sandbox/move_ext_test") NOTE this is relative to the current working directory not the script path
 
 sSEARCH_PATH=${1:-"."}
-sMOVE_TO_PATH=${2:-"sandbox/move_ext_test"}
-sFILE_EXT=${3:-"*"}
+sFILE_EXT=${2:-"*"}
+sMOVE_TO_PATH=${3:-"sandbox/move_ext_test"}
 sFILE=
 iFILE_COUNTER=0
 iCOUNTER=0
