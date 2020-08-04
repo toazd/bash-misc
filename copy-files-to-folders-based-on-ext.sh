@@ -1,17 +1,16 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
-# NOTE cp is used instead of mv while testing
-# NOTE the path files are copied/moved to and files in it are ignored during searching (in case the sMOVE_TO_PATH is within sSEARCH_PATH)
-# NOTE the script that is run is ignored during file searching BUG all copies anywhere are skipped
-# NOTE duplicate file checks are based first on case-sensitive file names, followed by checksums IF the names match
-#      this means that if you have files with the same contents, but with different names they will be copied
+# BUG  The current script name is ignored during searching based on $0 (minus a leading dot forward-slash "./" if it exists).
+#      This means that if the script is invoked as ./script.sh, then all copies of "script.sh" in any path within sSEARCH_PATH
+#       will be ignored.
 #
-# BUG  When using * as a search pattern (the default) files named like "APACHE-LICENSE-2.0" and "spotify-1.1.10.546-Release"
-#      will be put into a folder named based on the characters following the right-most dot "." found in the name
-#      eg. "0" and ".546-Release"
+# BUG  When using asterisk "*" as a search pattern (the default if none is specified) files named like
+#       "APACHE-LICENSE-2.0" and "spotify-1.1.10.546-Release" will be put into a folder named based on
+#       all of the characters following the right-most dot "." found in their respective names.
+#        eg. "APACHE-LICENSE-2.0" will be put into the folder "0" and "spotify-1.1.10.546-Release" will be put into the folder ".546-Release"
 #
 # BUG  If sMOVE_TO_PATH exists in multiple locations, all of them will be excluded from searches
-#      eg. if sMOVE_TO_PATH=output_path, then both /home/toazd/output_path and /usr/share/output_path will be ignored
+#       eg. If "sMOVE_TO_PATH=output_path", then both "/home/toazd/output_path" and "/usr/share/output_path" will be ignored
 #
 
 shopt -s nullglob dotglob
