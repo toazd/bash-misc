@@ -28,29 +28,29 @@ sFILE=
 iFILE_COUNTER=0
 iCOUNTER=0
 
-# TODO remove after testing is "done"
-#rm -r "$sMOVE_TO_PATH"
-# NOTE the debug-output.csv file will show up in the results if it is in the sSEARCH_PATH
 printf "%s\n" "Copy,DupTest,Mkdir,sFILENAME,sBASENAME_NO_EXT,sBASENAME,sEXT,sLOWERCASE_EXT,sMOVE_TO_PATH,sFILE" > debug-output.csv # TODO remove debug stuff
 
 # If sMOVE_TO_PATH is dot ".", dot forward-slash "./", or NULL "", set it to $PWD
-# NOTE if sMOVE_TO_PATH is NULL here, then "./" was specified
 [[ $sMOVE_TO_PATH =~ ^\.$|^\./+$|^$ ]] && sMOVE_TO_PATH=${PWD:-$(pwd)}
 
 echo "Checking $sSEARCH_PATH for files that match the pattern *.$sFILE_EXT"
 printf "%s\033[s" "Processing files..."
 while IFS= read -r sFILENAME; do
 
-    printf "\033[u%s" "${iCOUNTER}"
+    # Count each file returned from find
     iCOUNTER=$((iCOUNTER+1))
+
+    # Output progress (which file returned from find is about to be processed)
+    printf "\033[u%s" "${iCOUNTER}"
 
     # Replace all instances of dot forward-slash "./" with NULL
     sFILENAME=${sFILENAME//.\/}
 
     # Replace all instances of double forward-slash "//" with single forward-slash "/"
-    sFILENAME=${sFILENAME//\/\//\/}
+    #sFILENAME=${sFILENAME//\/\//\/}
 
     # Filter through the results
+    #
     # If we have read access to the file (TODO change to -w for move) and
     if [[ -r $sFILENAME ]]; then
 
@@ -74,12 +74,12 @@ while IFS= read -r sFILENAME; do
         # Get the extension in all lower-case characters
         sLOWERCASE_EXT=${sEXT,,}
 
-        # Create the path to move the file to using the extension,
-        # converting the extension to all lower-case to avoid creating
-        # extraneous folders
+        # Create the path to move the file to using the extension
+        # after converting the extension to all lower-case
+        #
         # NOTE if we have write access the folder already exists and we can write to it
         #      so there's no need to run mkdir
-        # NOTE checking for write access will also fail if the path doesn't exist
+        # NOTE checking for write access will also fail if the path does not exist
         [[ -w "$sMOVE_TO_PATH/$sLOWERCASE_EXT" ]] || {
             mkdir -p "$sMOVE_TO_PATH/$sLOWERCASE_EXT" || {
                 printf "%s\n" "True,False,False,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH,$sFILE" >> debug-output.csv # TODO remove debug stuff
@@ -87,21 +87,23 @@ while IFS= read -r sFILENAME; do
             }
         }
 
-        # Check for a possible file name conflict
+        # Check for a possible file name conflicts and handle conflicts in a way
+        # that prevents files from being overwritten
+        #
         # No existing file with the same name was found
         if [[ ! -f "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}/${sBASENAME}" ]]; then
 
             # Copy the file to its respective path
             # If the copy is successful iterate the file counter
             # TODO change cp to mv when testing is "done"
-            if cp "$sFILENAME" "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}"; then
+            if cp -n "$sFILENAME" "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}"; then
                 iFILE_COUNTER=$((iFILE_COUNTER+1))
                 printf "%s\n" "True,False,True,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH,$sFILE" >> debug-output.csv # TODO remove debug stuff
             else
                 printf "%s\n" "False,False,True,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH,$sFILE" >> debug-output.csv # TODO remove debug stuff
             fi
+        # An existing file with the same was found in the path sMOVE_TO_PATH/sLOWERCASE_EXT
         else
-            # An existing file with the same was found in the sMOVE_TO_PATH/sLOWERCASE_EXT
             #####echo "Duplicate file name detected: $sFILENAME"
 
             # If they are hardlinks they are already the same, no need to compare
@@ -111,10 +113,11 @@ while IFS= read -r sFILENAME; do
             }
 
             # Attempt to narrow down the files to compare against
+            #
             # NOTE not all files are checked against. Files with duplicate
             # contents but sufficiently different names will still be copied.
             # NOTE If sBASENAME_NO_EXT=NULL then the file name begins with a dot "."
-            # TODO might want to check all files
+            # TODO whether or not to check all files might make a good option parameter
             if [[ -n $sBASENAME_NO_EXT ]]; then
                 for sFILE in "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}/${sBASENAME_NO_EXT}"*; do
                     if cmp -s "$sFILENAME" "$sFILE"; then
@@ -132,17 +135,19 @@ while IFS= read -r sFILENAME; do
             fi
 
             #####echo "Duplicate file is unique, copying but renaming with unique identifier"
+
             # Name the file based on whether it is a dotfile or not
-            # NOTE if sFILENAME is a dotfile, then sEXT contains it's name
+            #
+            # NOTE if sFILENAME is a dotfile, then sEXT contains all the characters after the leading dot
             if [[ -n $sBASENAME_NO_EXT ]]; then
-                if cp "$sFILENAME" "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}/${sBASENAME_NO_EXT}_${RANDOM}${RANDOM}.${sEXT}"; then
+                if cp -n "$sFILENAME" "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}/${sBASENAME_NO_EXT}_${RANDOM}${RANDOM}.${sEXT}"; then
                     iFILE_COUNTER=$((iFILE_COUNTER+1))
                     printf "%s\n" "True,True,True,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH,$sFILE" >> debug-output.csv # TODO remove debug stuff
                 else
                     printf "%s\n" "False,True,True,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH,$sFILE" >> debug-output.csv # TODO remove debug stuff
                 fi
             elif [[ -z $sBASENAME_NO_EXT ]]; then
-                if cp "$sFILENAME" "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}/.${sEXT}_${RANDOM}${RANDOM}"; then
+                if cp -n "$sFILENAME" "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}/.${sEXT}_${RANDOM}${RANDOM}"; then
                     iFILE_COUNTER=$((iFILE_COUNTER+1))
                     printf "%s\n" "True,True,True,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH,$sFILE" >> debug-output.csv # TODO remove debug stuff
                 else
@@ -153,7 +158,7 @@ while IFS= read -r sFILENAME; do
     else
         echo "No read access to: $sFILENAME"
     fi
-done < <(find "${sSEARCH_PATH}/" -type f -not -path "*$sMOVE_TO_PATH*" -not -name "${0/#.\/}" -iname "*.${sFILE_EXT}" 2>/dev/null)
+done < <(find "${sSEARCH_PATH}" -type f -not -path "*$sMOVE_TO_PATH*" -not -name "${0/#.\/}" -iname "*.${sFILE_EXT}" 2>/dev/null)
 
 # Report what happened
 if [[ $iFILE_COUNTER -eq 0 && $iCOUNTER -gt 1 ]]; then
