@@ -20,26 +20,23 @@ shopt -s nullglob dotglob
 # Third parameter = /path/to/copyto (default: "sandbox/move_ext_test") NOTE this is relative to the current working directory not the script path
 
 sSEARCH_PATH=${1:-"."}
-sFILE_EXT=${2:-"*"}
-sMOVE_TO_PATH=${3:-"sandbox/move_ext_test"}
-sMOVE_TO_PATH=${sMOVE_TO_PATH//.\/}
+sMOVE_TO_PATH=${2:-"sandbox/move_ext_test"}
+sFILE_EXT=${3:-"*"}
 sFILE=
 iFILE_COUNTER=0
 iCOUNTER=0
 
 # TODO remove after testing is "done"
 #rm -r "$sMOVE_TO_PATH"
-# NOTE the debug.output.csv file will show up in the results if it is in the sSEARCH_PATH
-printf "%s\n" "Copy,DupTest,Mkdir,sFILENAME,sBASENAME_NO_EXT,sBASENAME,sEXT,sLOWERCASE_EXT,sMOVE_TO_PATH,sFILE" > debug.output.csv # TODO remove debug stuff
+# NOTE the debug-output.csv file will show up in the results if it is in the sSEARCH_PATH
+printf "%s\n" "Copy,DupTest,Mkdir,sFILENAME,sBASENAME_NO_EXT,sBASENAME,sEXT,sLOWERCASE_EXT,sMOVE_TO_PATH,sFILE" > debug-output.csv # TODO remove debug stuff
+
+# If sMOVE_TO_PATH is dot ".", dot forward-slash "./", or NULL "", set it to $PWD
+# NOTE if sMOVE_TO_PATH is NULL here, then "./" was specified
+[[ $sMOVE_TO_PATH =~ ^\.$|^\./+$|^$ ]] && sMOVE_TO_PATH=${PWD:-$(pwd)}
 
 # check for write access to the move/copy path
-# NOTE if sMOVE_TO_PATH is NULL here, then "./" was specified
-if [[ $sMOVE_TO_PATH = "" ]]; then
-    sMOVE_TO_PATH=$PWD
-    [[ ! -w $sMOVE_TO_PATH ]] && { echo "No write access to ${sMOVE_TO_PATH%%/*}"; exit 1; }
-else
-    [[ ! -w ${sMOVE_TO_PATH%%/*} ]] && { echo "No write access to ${sMOVE_TO_PATH%%/*}"; exit 1; }
-fi
+[[ ! -w $sMOVE_TO_PATH ]] && { echo "No write access to $sMOVE_TO_PATH"; exit 1; }
 
 echo "Checking $sSEARCH_PATH for files that match the pattern *.$sFILE_EXT"
 printf "%s\033[s" "Processing files..."
@@ -48,7 +45,7 @@ while IFS= read -r sFILENAME; do
     printf "\033[u%s" "${iCOUNTER}"
     iCOUNTER=$((iCOUNTER+1))
 
-    # Replace all instances of dot forward slash "./" with NULL
+    # Replace all instances of dot forward-slash "./" with NULL
     sFILENAME=${sFILENAME//.\/}
 
     # Replace all instances of double forward-slash "//" with single forward-slash "/"
@@ -81,10 +78,12 @@ while IFS= read -r sFILENAME; do
         # Create the path to move the file to using the extension,
         # converting the extension to all lower-case to avoid creating
         # extraneous folders
+        # NOTE if we have write access the folder already exists and we can write to it
+        #      so there's no need to run mkdir
         # NOTE checking for write access will also fail if the path doesn't exist
         [[ -w "$sMOVE_TO_PATH/$sLOWERCASE_EXT" ]] || {
             mkdir -p "$sMOVE_TO_PATH/$sLOWERCASE_EXT" || {
-                printf "%s\n" "True,False,False,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH,$sFILE" >> debug.output.csv # TODO remove debug stuff
+                printf "%s\n" "True,False,False,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH,$sFILE" >> debug-output.csv # TODO remove debug stuff
                 continue
             }
         }
@@ -98,9 +97,9 @@ while IFS= read -r sFILENAME; do
             # TODO change cp to mv when testing is "done"
             if cp "$sFILENAME" "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}"; then
                 iFILE_COUNTER=$((iFILE_COUNTER+1))
-                printf "%s\n" "True,False,True,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH,$sFILE" >> debug.output.csv # TODO remove debug stuff
+                printf "%s\n" "True,False,True,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH,$sFILE" >> debug-output.csv # TODO remove debug stuff
             else
-                printf "%s\n" "False,False,True,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH,$sFILE" >> debug.output.csv # TODO remove debug stuff
+                printf "%s\n" "False,False,True,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH,$sFILE" >> debug-output.csv # TODO remove debug stuff
             fi
         else
             # An existing file with the same was found in the sMOVE_TO_PATH/sLOWERCASE_EXT
@@ -139,23 +138,23 @@ while IFS= read -r sFILENAME; do
             if [[ -n $sBASENAME_NO_EXT ]]; then
                 if cp "$sFILENAME" "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}/${sBASENAME_NO_EXT}_${RANDOM}${RANDOM}.${sEXT}"; then
                     iFILE_COUNTER=$((iFILE_COUNTER+1))
-                    printf "%s\n" "True,True,True,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH,$sFILE" >> debug.output.csv # TODO remove debug stuff
+                    printf "%s\n" "True,True,True,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH,$sFILE" >> debug-output.csv # TODO remove debug stuff
                 else
-                    printf "%s\n" "False,True,True,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH,$sFILE" >> debug.output.csv # TODO remove debug stuff
+                    printf "%s\n" "False,True,True,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH,$sFILE" >> debug-output.csv # TODO remove debug stuff
                 fi
             elif [[ -z $sBASENAME_NO_EXT ]]; then
                 if cp "$sFILENAME" "${sMOVE_TO_PATH}/${sLOWERCASE_EXT}/.${sEXT}_${RANDOM}${RANDOM}"; then
                     iFILE_COUNTER=$((iFILE_COUNTER+1))
-                    printf "%s\n" "True,True,True,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH,$sFILE" >> debug.output.csv # TODO remove debug stuff
+                    printf "%s\n" "True,True,True,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH,$sFILE" >> debug-output.csv # TODO remove debug stuff
                 else
-                    printf "%s\n" "False,True,True,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH,$sFILE" >> debug.output.csv # TODO remove debug stuff
+                    printf "%s\n" "False,True,True,$sFILENAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sMOVE_TO_PATH,$sFILE" >> debug-output.csv # TODO remove debug stuff
                 fi
             fi
         fi
     else
         echo "No read access to: $sFILENAME"
     fi
-done < <(find "${sSEARCH_PATH}/" -type f -not -path "*$sMOVE_TO_PATH*" -not -name "*${0//.\/}*" -iname "*.${sFILE_EXT}" 2>/dev/null)
+done < <(find "${sSEARCH_PATH}/" -type f -not -path "*$sMOVE_TO_PATH*" -not -name "${0/#.\/}" -iname "*.${sFILE_EXT}" 2>/dev/null)
 
 # Report what happened
 if [[ $iFILE_COUNTER -eq 0 && $iCOUNTER -gt 1 ]]; then
