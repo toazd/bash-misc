@@ -10,6 +10,9 @@
 #      will be put into a folder named based on the characters following the right-most dot "." found in the name
 #      eg. "0" and ".546-Release"
 #
+# BUG  If sMOVE_TO_PATH exists in multiple locations, all of them will be excluded from searches
+#      eg. if sMOVE_TO_PATH=output_path, then both /home/toazd/output_path and /usr/share/output_path will be ignored
+#
 
 shopt -s nullglob dotglob
 
