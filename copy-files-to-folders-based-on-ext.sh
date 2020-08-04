@@ -35,9 +35,6 @@ printf "%s\n" "Copy,DupTest,Mkdir,sFILENAME,sBASENAME_NO_EXT,sBASENAME,sEXT,sLOW
 # NOTE if sMOVE_TO_PATH is NULL here, then "./" was specified
 [[ $sMOVE_TO_PATH =~ ^\.$|^\./+$|^$ ]] && sMOVE_TO_PATH=${PWD:-$(pwd)}
 
-# check for write access to the move/copy path
-[[ ! -w $sMOVE_TO_PATH ]] && { echo "No write access to $sMOVE_TO_PATH"; exit 1; }
-
 echo "Checking $sSEARCH_PATH for files that match the pattern *.$sFILE_EXT"
 printf "%s\033[s" "Processing files..."
 while IFS= read -r sFILENAME; do
