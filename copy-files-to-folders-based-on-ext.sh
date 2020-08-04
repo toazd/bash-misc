@@ -51,14 +51,15 @@ if [[ $1 ]]; then
     shift
 fi
 
-printf "%s\n" "Copy,DupTest,Mkdir,sFILENAME,sBASENAME_NO_EXT,sBASENAME,sEXT,sLOWERCASE_EXT,sTARGET_PATH,sFILE" > debug-output.csv # TODO remove debug stuff
-
 # If sTARGET_PATH is dot ".", dot forward-slash "./", or NULL "", set it to $PWD
 [[ $sTARGET_PATH =~ ^\.$|^\./+$|^$ ]] && sTARGET_PATH=${PWD:-$(pwd)}
 
 echo "Checking path \"$sSOURCE_PATH\" for files that match the pattern \"*.$sSEARCH_PATTERN\""
 printf "%s\033[s" "Processing files..."
 while IFS= read -r sFILENAME; do
+
+    [[ $iCOUNTER -eq 0 ]] && \
+        printf "%s\n" "Copy,DupTest,Mkdir,sFILENAME,sBASENAME_NO_EXT,sBASENAME,sEXT,sLOWERCASE_EXT,sTARGET_PATH,sFILE" > debug-output.csv # TODO remove debug stuff
 
     # Count each file returned from find
     iCOUNTER=$((iCOUNTER+1))
