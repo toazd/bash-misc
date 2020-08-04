@@ -54,7 +54,7 @@ fi
 # If sTARGET_PATH is dot ".", dot forward-slash "./", or NULL "", set it to $PWD
 [[ $sTARGET_PATH =~ ^\.$|^\./+$|^$ ]] && sTARGET_PATH=${PWD:-$(pwd)}
 
-echo "Checking path \"$sSOURCE_PATH\" for files that match the pattern \"*.$sSEARCH_PATTERN\""
+echo "Checking the path \"$sSOURCE_PATH\" for files that match the pattern \"*.$sSEARCH_PATTERN\""
 printf "%s\033[s" "Processing files..."
 while IFS= read -r sFILENAME; do
 
