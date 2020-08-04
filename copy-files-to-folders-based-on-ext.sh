@@ -15,12 +15,6 @@
 
 shopt -s nullglob dotglob
 
-# TODO parameter handling and usage output
-# All parameters are optional
-# First parameter = /search/path (default: the current working directory) NOTE this does not have to be the script path
-# Second parameter = extension (default: *)
-# Third parameter = /path/to/copyto (default: "sandbox/move_ext_test") NOTE this is relative to the current working directory not the script path
-
 ShowUsage() {
     printf 'Usage:\n%s\n%s\n' \
            "${0##*/} [/search/path] [/target/path] *.[pattern]" \
@@ -70,9 +64,6 @@ while IFS= read -r sFILENAME; do
     # Replace all instances of dot forward-slash "./" with NULL
     sFILENAME=${sFILENAME//.\/}
 
-    # Replace all instances of double forward-slash "//" with single forward-slash "/"
-    #sFILENAME=${sFILENAME//\/\//\/}
-
     # Filter through the results
     #
     # If we have read access to the file (TODO change to -w for move) and
@@ -121,13 +112,8 @@ while IFS= read -r sFILENAME; do
             fi
         # An existing file with the same was found in the path sTARGET_PATH/sLOWERCASE_EXT
         else
-            #####echo "Duplicate file name detected: $sFILENAME"
-
             # If they are hardlinks they are already the same, no need to compare
-            [[  $sFILENAME -ef "${sTARGET_PATH}/${sLOWERCASE_EXT}/${sBASENAME}" ]] && {
-                #####echo "Hardlink detected, skipping copy"
-                continue
-            }
+            [[  $sFILENAME -ef "${sTARGET_PATH}/${sLOWERCASE_EXT}/${sBASENAME}" ]] && continue
 
             # Attempt to narrow down the files to compare against
             #
@@ -137,23 +123,16 @@ while IFS= read -r sFILENAME; do
             # TODO whether or not to check all files might make a good option parameter
             if [[ -n $sBASENAME_NO_EXT ]]; then
                 for sFILE in "${sTARGET_PATH}/${sLOWERCASE_EXT}/${sBASENAME_NO_EXT}"*; do
-                    if cmp -s "$sFILENAME" "$sFILE"; then
-                        #####echo "Exact copy found at: $sFILE, skipping copy"
-                        continue 2
-                    fi
+                    cmp -s "$sFILENAME" "$sFILE" && continue 2
                 done
             elif [[ -z $sBASENAME_NO_EXT ]]; then
                 for sFILE in "${sTARGET_PATH}/${sLOWERCASE_EXT}/${sBASENAME}"*; do
-                    if cmp -s "$sFILENAME" "$sFILE"; then
-                        #####echo "Exact copy found at: $sFILE, skipping copy"
-                        continue 2
-                    fi
+                    cmp -s "$sFILENAME" "$sFILE" && continue 2
                 done
             fi
 
-            #####echo "Duplicate file is unique, copying but renaming with unique identifier"
-
-            # Name the file based on whether it is a dotfile or not
+            # The duplicate file is potentially unique
+            # Rename the file based on whether it is a dotfile or not and copy it
             #
             # NOTE if sFILENAME is a dotfile, then sEXT contains all the characters after the leading dot
             # TODO better unique identifiers
