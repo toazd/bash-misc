@@ -83,8 +83,6 @@ done
 # Sanity checks
 [[ -f $sSCRIPT_SOURCE_NAME ]] || { echo "sSCRIPT_SOURCE_NAME failed file test at line $LINENO. It's value was: \"$sSCRIPT_SOURCE_NAME\""; exit 1; }
 
-echo "$sTARGET_PATH"
-exit
 printf "%s\n" "Copy,DupTest,Mkdir,sFILE_NAME,sBASENAME_NO_EXT,sBASENAME,sEXT,sLOWERCASE_EXT,sTARGET_PATH,sEXISTING_FILE" > debug-output.csv # TODO remove debug stuff
 
 echo "Checking the path \"$sSOURCE_PATH\" for readable files that match the pattern \"*.$sSEARCH_PATTERN\""
