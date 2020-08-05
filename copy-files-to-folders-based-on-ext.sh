@@ -200,10 +200,10 @@ if [[ $iFILE_COUNTER -eq 0 && $iCOUNTER -gt 1 ]]; then
 elif [[ $iFILE_COUNTER -ge 1 && $iCOUNTER -gt 1 ]]; then
     if [[ $iFILE_COUNTER -eq 1 ]]; then
         printf "\r\033[0K%s\n" "$iCOUNTER files checked. $iFILE_COUNTER was found to be unique."
-        echo "It was copied to \"$PWD/$sTARGET_PATH\""
+        echo "It was copied to \"$sTARGET_PATH\""
     elif [[ $iFILE_COUNTER -gt 1 ]]; then
         printf "\r\033[0K%s\n" "$iCOUNTER files checked. $iFILE_COUNTER were found to be unique."
-        echo "They were copied to \"$PWD/$sTARGET_PATH\""
+        echo "They were copied to \"$sTARGET_PATH\""
     fi
 elif [[ $iCOUNTER -eq 0 ]]; then
     printf "\r\033[0K%s\n" "No files found in path \"$sSOURCE_PATH\". No changes were made."
