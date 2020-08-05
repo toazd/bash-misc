@@ -5,8 +5,8 @@
 #       all of the characters following the right-most dot "." found in their respective names.
 #        eg. "APACHE-LICENSE-2.0" will be put into the folder "0" and "spotify-1.1.10.546-Release" will be put into the folder ".546-Release"
 #
-# BUG  If sTARGET_PATH exists in multiple locations, all of them will be excluded from searches
-#       eg. If "sTARGET_PATH=output_path", then both "/home/toazd/output_path" and "/usr/share/output_path" will be ignored
+# BUG  If the string contained in sTARGET_PATH is a subset of any other path in the search path, it will be excluded from processing
+#       eg. If "sTARGET_PATH=output_path", then both "/home/toazd/output_path" and "/usr/share/output_path" will be excluded
 #
 
 #
@@ -46,14 +46,30 @@ if [[ $1 ]]; then
     shift
 fi
 
-# Check if the search path specified is a valid path
+# Sanitize input
+#
+# While sSOURCE_PATH contains two or more consecutive forward-slashes "/"
+# or three or more consecutive dots ".", replace "//" with "/" and replace "..." with ".."
+while [[ $sSOURCE_PATH =~ /{2,} || $sSOURCE_PATH =~ \.{3,} ]]; do
+    sSOURCE_PATH=${sSOURCE_PATH/\/\//\/}
+    sSOURCE_PATH=${sSOURCE_PATH/.../..}
+done
+
+# While sTARGET_PATH contains two or more consecutive forward-slashes "/"
+# or three or more consecutive dots ".", replace "//" with "/" and replace "..." with ".."
+while [[ $sTARGET_PATH =~ /{2,} || $sTARGET_PATH =~ \.{3,} ]]; do
+    sTARGET_PATH=${sTARGET_PATH/\/\//\/}
+    sTARGET_PATH=${sTARGET_PATH/.../..}
+done
+
+sSOURCE_PATH=$(realpath "$sSOURCE_PATH")
+sTARGET_PATH=$(realpath "$sTARGET_PATH")
+
+# Check if the search path specified exists
+#
 # NOTE read permission is intentionally not checked here because the script supports providing paths
 # such as the root "/" and subsequently processing only files that can be read with the current UID
 [[ -d $sSOURCE_PATH ]] || { echo "Search path does not exist: \"$sSOURCE_PATH\""; ShowUsage; }
-
-# If sTARGET_PATH is dot ".", dot (one or more) forward-slash(es) "./", or NULL "", set it to $PWD
-# TODO checking for NULL is probably not needed anymore
-[[ $sTARGET_PATH =~ ^\.$|^\./+$|^$ ]] && sTARGET_PATH=${PWD:-$(pwd)}
 
 # Canonicalize the name of the running script, supporting both symlinks and relative symlinks
 # NOTE The "! -samefile" find parameter below handles ignoring hardlinks (when using find -P) but to have
@@ -72,20 +88,29 @@ done
 
 printf "%s\n" "Copy,DupTest,Mkdir,sFILE_NAME,sBASENAME_NO_EXT,sBASENAME,sEXT,sLOWERCASE_EXT,sTARGET_PATH,sEXISTING_FILE" > debug-output.csv # TODO remove debug stuff
 
-echo "Checking the path \"$sSOURCE_PATH\" for files that match the pattern \"*.$sSEARCH_PATTERN\""
+echo "Checking the path \"$sSOURCE_PATH\" for readable files that match the pattern \"*.$sSEARCH_PATTERN\""
 printf "%s\033[s" "Processing files..."
 while IFS= read -r sFILE_NAME; do
 
     # Count each file returned from find
+    # NOTE for accurate results output, this must be first in the main loop
     iCOUNTER=$((iCOUNTER+1))
 
-    # Output progress (which file returned from find is about to be processed)
+    # Output progress
     printf "\033[u%s" "${iCOUNTER}"
 
     # Anchored from the left, remove the first instance of dot forward-slash "./" if present
+    # NOTE do not perform exclusion tests against sFILE_NAME before this because if sSEARCH_PATTERN
+    # contains dot "." or dot forward-slash "./" then the results from find will also be prefixed with
+    # dot "." or dot forward-slash "./"
+    [[ $sFILE_NAME =~ ^/{2,} ]] && echo ".//+ found: $sFILE_NAME"
     sFILE_NAME=${sFILE_NAME/#.\/}
 
+    # If sFILE_NAME is equal to the canonicalized name of the script that is running, exclude it
+    [[ $sFILE_NAME = "$sSCRIPT_SOURCE_NAME" ]] && continue
+
     # Get the basename of the file not including the extension
+    # NOTE If sBASENAME_NO_EXT becomes NULL then the file is a dotfile (.*) and no other dot exists in the file name
     sBASENAME_NO_EXT=${sFILE_NAME%.*}
     sBASENAME_NO_EXT=${sBASENAME_NO_EXT##*/}
 
@@ -93,13 +118,12 @@ while IFS= read -r sFILE_NAME; do
     sBASENAME=${sFILE_NAME##*/}
 
     # Get the file extension
+    # NOTE for dotfiles (.*) that contain only a single leading dot "." this variable will contain the file name
     sEXT=${sFILE_NAME##*.}
 
     # Get the extension in all lower-case characters
+    # NOTE do not use this variable for naming any files, only folders
     sLOWERCASE_EXT=${sEXT,,}
-
-    # If sFILE_NAME is equal to the canonicalized name of the script that is running, exclude it
-    [[ $sFILE_NAME = "$sSCRIPT_SOURCE_NAME" ]] && continue
 
     # Create the path to move the file to using the extension
     # after converting the extension to all lower-case
@@ -138,7 +162,7 @@ while IFS= read -r sFILE_NAME; do
         #
         # NOTE not all files are checked against. Files with duplicate
         # contents but sufficiently different names will still be copied.
-        # NOTE If sBASENAME_NO_EXT=NULL then the file name begins with a dot "."
+        # NOTE If sBASENAME_NO_EXT=NULL then the file name begins with a dot "." and no other dot exists in the file name
         # TODO whether or not to check all files might make a good option parameter
         if [[ -n $sBASENAME_NO_EXT ]]; then
             for sEXISTING_FILE in "$sTARGET_PATH/$sLOWERCASE_EXT/$sBASENAME_NO_EXT"*; do
