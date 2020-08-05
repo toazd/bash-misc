@@ -5,9 +5,6 @@
 #       all of the characters following the right-most dot "." found in their respective names.
 #        eg. "APACHE-LICENSE-2.0" will be put into the folder "0" and "spotify-1.1.10.546-Release" will be put into the folder ".546-Release"
 #
-# BUG  If the string contained in sTARGET_PATH is a subset of any other path in the search path, it will be excluded from processing
-#       eg. If "sTARGET_PATH=output_path", then both "/home/toazd/output_path" and "/usr/share/output_path" will be excluded
-#
 
 #
 # NOTE /proc/* and /dev/* are explicitly ignored
@@ -86,6 +83,8 @@ done
 # Sanity checks
 [[ -f $sSCRIPT_SOURCE_NAME ]] || { echo "sSCRIPT_SOURCE_NAME failed file test at line $LINENO. It's value was: \"$sSCRIPT_SOURCE_NAME\""; exit 1; }
 
+echo "$sTARGET_PATH"
+exit
 printf "%s\n" "Copy,DupTest,Mkdir,sFILE_NAME,sBASENAME_NO_EXT,sBASENAME,sEXT,sLOWERCASE_EXT,sTARGET_PATH,sEXISTING_FILE" > debug-output.csv # TODO remove debug stuff
 
 echo "Checking the path \"$sSOURCE_PATH\" for readable files that match the pattern \"*.$sSEARCH_PATTERN\""
@@ -195,7 +194,7 @@ while IFS= read -r sFILE_NAME; do
             fi
         fi
     fi
-done < <(find -P "$sSOURCE_PATH" -type f -readable ! -path "/proc/*" ! -path "/dev/*" ! -path "*$sTARGET_PATH*" ! -samefile "$sSCRIPT_SOURCE_NAME" -iname "*.$sSEARCH_PATTERN" 2>/dev/null)
+done < <(find -P "$sSOURCE_PATH" -type f -readable ! -path "/proc/*" ! -path "/dev/*" ! -path "$sTARGET_PATH" ! -samefile "$sSCRIPT_SOURCE_NAME" -iname "*.$sSEARCH_PATTERN" 2>/dev/null)
 
 # Report what happened
 if [[ $iFILE_COUNTER -eq 0 && $iCOUNTER -gt 1 ]]; then
