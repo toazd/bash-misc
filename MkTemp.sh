@@ -2,16 +2,16 @@
 
 # Bash only primitive replacement for mktemp
 # Accepts one parameter: the path where the temp file will be created (default: /tmp)
-
-# shellcheck disable=SC2155
 MkTemp() {
 
-    local sTMP_PATH=${1:-"/tmp"}
-    local sTMP_FILE=""
+    local sTMP_PATH
+    local sTMP_FILE
+
+    sTMP_PATH=${1:-"/tmp"}
 
     [[ -d $sTMP_PATH ]] || { echo "Invalid path requested: \"$sTMP_PATH\""; return 1; }
 
-    sTMP_FILE="$sTMP_PATH"/tmp.$(GenerateRandomAlphaNumericString)
+    sTMP_FILE="$sTMP_PATH"/tmp.$(GenerateRandomAlphaNumericString 10)
 
     # Check for write access in the path that contains the temp file
     [[ -w ${sTMP_FILE%/*} ]] || { echo "No write access to temp file path \"${sTMP_FILE%/*}\""; return 1; }
@@ -27,19 +27,18 @@ MkTemp() {
     printf "%s" "$sTMP_FILE"
 
     return 0
-
 }
 
 # Generate a pseudo-random alphanumeric string using only Bash
 # Accepts one parameter: the length of the string to generate (range 1-32767) (default: 10)
-
-# shellcheck disable=SC2155,SC2120,SC2119
 GenerateRandomAlphaNumericString() {
 
-    local sLIST=$(printf "%s" {a..z}{0..9}{A..Z})
+    local sLIST
     local iLEN=${1:-10}
-    local sRESULT=""
+    local sRESULT
     local iC=1
+
+    sLIST=$(printf "%s" {a..z}{0..9}{A..Z})
 
     # If the length requested is outside sane upper and lower bounds, reset it
     [[ $iLEN -lt 1 ]] && iLEN=1
@@ -65,5 +64,4 @@ GenerateRandomAlphaNumericString() {
     printf "%s" "$sRESULT"
 
     return 0
-
 }
