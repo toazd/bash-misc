@@ -83,6 +83,35 @@ done
 # Sanity checks
 [[ -f $sSCRIPT_SOURCE_NAME ]] || { echo "sSCRIPT_SOURCE_NAME failed file test at line $LINENO. It's value was: \"$sSCRIPT_SOURCE_NAME\""; exit 1; }
 
+CompareTwoFiles() {
+
+    local sFILE_A=$1 sFILE_B=$2 iaCHECKSUMS=()
+
+    # NOTE new, incomplete feature stuff
+    if [[ -f $sTARGET_PATH/checksums.md512 ]]; then
+        while read -r; do
+            iaCHECKSUMS+=("$REPLY")
+        done < "$sTARGET_PATH/checksums.md512"
+
+        for sNAME in "${iaCHECKSUMS[@]}"; do
+            echo "Left:  \"${sNAME%%[[:blank:]]*}\""
+            echo "Right: \"${sNAME##*[[:blank:]]}\""
+            iTOTAL=$((iTOTAL+${#sNAME}))
+        done
+
+        echo "${#iaCHECKSUMS[@]}"
+
+    else
+        sCHECKSUM_A=$(sha256sum "$sFILE_A")
+        sCHECKSUM_B=$(sha256sum "$sFILE_B")
+        if [[ ${sCHECKSUM_A%%[[:blank:]]*} = "${sCHECKSUM_B%%[[:blank:]]*}" ]]; then
+            return 0 # they are equal
+        else
+            return 1 # they are not equal
+        fi
+    fi
+}
+
 printf "%s\n" "Copy,DupTest,Mkdir,sFILE_NAME,sBASENAME_NO_EXT,sBASENAME,sEXT,sLOWERCASE_EXT,sTARGET_PATH,sEXISTING_FILE" > debug-output.csv # TODO remove debug stuff
 
 echo "Checking the path \"$sSOURCE_PATH\" for readable files that match the pattern \"*.$sSEARCH_PATTERN\""
@@ -146,6 +175,11 @@ while IFS= read -r sFILE_NAME; do
         # If the copy is successful iterate the file counter
         if cp -n "$sFILE_NAME" "$sTARGET_PATH/$sLOWERCASE_EXT"; then
             iFILE_COUNTER=$((iFILE_COUNTER+1))
+            # NOTE new, incomplete feature stuff
+            cd "$sTARGET_PATH" && {
+                sha512sum "$sLOWERCASE_EXT/$sBASENAME" >> checksums.md512
+                cd "$OLDPWD" || { echo "Failed to cd to OLDPWD: \"$OLDPWD\""; exit 1; }
+            }
             printf "%s\n" "True,False,True,$sFILE_NAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sTARGET_PATH,$sEXISTING_FILE" >> debug-output.csv # TODO remove debug stuff
         else
             printf "%s\n" "False,False,True,$sFILE_NAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sTARGET_PATH,$sEXISTING_FILE" >> debug-output.csv # TODO remove debug stuff
@@ -177,15 +211,27 @@ while IFS= read -r sFILE_NAME; do
         # NOTE if sFILE_NAME is a dotfile, then sEXT contains all the characters after the leading dot
         # TODO better unique identifiers
         if [[ -n $sBASENAME_NO_EXT ]]; then
-            if cp -n "$sFILE_NAME" "${sTARGET_PATH}/${sLOWERCASE_EXT}/${sBASENAME_NO_EXT}_${RANDOM}${RANDOM}.${sEXT}"; then
+            sRANDOM=$RANDOM$RANDOM
+            if cp -n "$sFILE_NAME" "$sTARGET_PATH/$sLOWERCASE_EXT/${sBASENAME_NO_EXT}_$sRANDOM.$sEXT"; then
                 iFILE_COUNTER=$((iFILE_COUNTER+1))
+                # NOTE new, incomplete feature stuff
+                cd "$sTARGET_PATH" && {
+                    sha512sum "$sLOWERCASE_EXT/${sBASENAME_NO_EXT}_$sRANDOM.$sEXT" >> checksums.md512
+                    cd "$OLDPWD" || { echo "Failed to cd to OLDPWD: \"$OLDPWD\""; exit 1; }
+                }
                 printf "%s\n" "True,True,True,$sFILE_NAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sTARGET_PATH,$sEXISTING_FILE" >> debug-output.csv # TODO remove debug stuff
             else
                 printf "%s\n" "False,True,True,$sFILE_NAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sTARGET_PATH,$sEXISTING_FILE" >> debug-output.csv # TODO remove debug stuff
             fi
         elif [[ -z $sBASENAME_NO_EXT ]]; then
-            if cp -n "$sFILE_NAME" "${sTARGET_PATH}/${sLOWERCASE_EXT}/.${sEXT}_${RANDOM}${RANDOM}"; then
+            sRANDOM=$RANDOM$RANDOM
+            if cp -n "$sFILE_NAME" "$sTARGET_PATH/$sLOWERCASE_EXT/.${sEXT}_$sRANDOM"; then
                 iFILE_COUNTER=$((iFILE_COUNTER+1))
+                # NOTE new, incomplete feature stuff
+                cd "$sTARGET_PATH" && {
+                    sha512sum "$sLOWERCASE_EXT/.${sEXT}_$sRANDOM" >> checksums.md512
+                    cd "$OLDPWD" || { echo "Failed to cd to OLDPWD: \"$OLDPWD\""; exit 1; }
+                }
                 printf "%s\n" "True,True,True,$sFILE_NAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sTARGET_PATH,$sEXISTING_FILE" >> debug-output.csv # TODO remove debug stuff
             else
                 printf "%s\n" "False,True,True,$sFILE_NAME,$sBASENAME_NO_EXT,$sBASENAME,$sEXT,$sLOWERCASE_EXT,$sTARGET_PATH,$sEXISTING_FILE" >> debug-output.csv # TODO remove debug stuff
@@ -210,3 +256,6 @@ elif [[ $iCOUNTER -eq 0 ]]; then
 else
     printf "\n%s\n" "An unknown error occured: \"$iCOUNTER\" \"$iFILE_COUNTER\""
 fi
+
+# NOTE new, incomplete feature stuff
+[[ -f $sTARGET_PATH/checksums.md512 ]] && sort -fuk2.1 "$sTARGET_PATH/checksums.md512" -o "$sTARGET_PATH/checksums.md512"
