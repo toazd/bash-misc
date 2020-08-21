@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 #
+# Fill a tmp file with random alpha-numeric content
+# Two optional parameters: $1=length of the lines to generate
+#                          $2=total number of lines to generate
 #
 
 set -eEmBu
