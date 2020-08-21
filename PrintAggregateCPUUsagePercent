@@ -69,7 +69,7 @@ PrintAggregateCPUUsagePercent() {
                         if (( bash_only )); then
                             usage_percent=$(( (delta_total - delta_idle) * 100 / delta_total ))
                             (( i > 1 )) && tally=$(( tally + usage_percent ))
-                        else
+                        elif (( ! bash_only )); then
                             usage_percent=$( bc -l <<< "scale=$bc_scale; (($delta_total - $delta_idle) *100) / $delta_total" )
                             (( i > 1 )) && tally=$( bc -l <<< "scale=$bc_scale; ($tally + $usage_percent)" )
                         fi
@@ -92,22 +92,22 @@ PrintAggregateCPUUsagePercent() {
             if (( total_avg )); then
                 if (( print_newline )); then
                     echo "${total_avg}%"
-                else
+                elif (( ! print_newline )); then
                     printf '%s' "${total_avg}%"
                 fi
             else
                 if (( print_newline )); then
                     echo "<1%"
-                else
+                elif (( ! print_newline )); then
                     printf '%s' "<1%"
                 fi
             fi
-        else
+        elif (( ! bash_only )); then
             total_avg=$( bc -l <<< "scale=$bc_scale; ($tally / $num_samples)" )
             total_avg=$( printf "%${printf_minwidth}.${printf_scale}f" "$total_avg" )
             if (( print_newline )); then
                 echo "${total_avg/%.0}%"
-            else
+            elif (( ! print_newline )); then
                 printf '%s' "${total_avg/%.0}%"
             fi
         fi
