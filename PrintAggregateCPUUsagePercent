@@ -39,7 +39,6 @@
 #  user  nice  system  idle  iowait  irq  softirq  steal  guest  guest_nice extra
 
 set -huo pipefail
-shopt -s extglob
 
 PrintAggregateCPUUsagePercent() {
 
