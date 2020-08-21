@@ -17,17 +17,15 @@
 #
 # https://www.kernel.org/doc/Documentation/filesystems/proc.txt
 #
-#  f0    f1    f2      f3    f4      f5   f6       f7     f8     f9
-#  user  nice  system  idle  iowait  irq  softirq  steal  guest  guest_nice extra
 
-set -huo pipefail
+set -hu
 
 PrintAggregateCPUUsagePercent() {
 
     local bash_only=1                       # 1=[use only bash arithmatic) 0=[use bc]
     local printf_scale=1                    # If bc is used, how many decimal places to show
     local printf_minwidth=3                 # Minimum width for printf field, padded with leading spaces (NOTE GNU printf does not support min width modifier for %s)
-    local bc_scale=$(( printf_scale + 1 ))  # bc_scale must be one higher than printf_scale for rounding
+    local bc_scale=$(( printf_scale + 1 ))  # bc_scale must be one higher than printf_scale for rounding (NOTE bash only truncates instead of rounding)
     local num_samples=4                     # total_avg = tally / ( num_samples - 1 )
     local sample_period_seconds="0.25"      # Time in seconds to sleep between iterations
     local print_newline=1                   # 1=[Print a newline after n%] 0=[Do not print a newline after n%]
@@ -40,18 +38,27 @@ PrintAggregateCPUUsagePercent() {
     local prev_total=0
     local delta_total=0
     local delta_idle=0
-    local label
+    local label=''
     local usage_percent=0
-    local f{0..7}=0
-    local xtra
+    local usage_percent=0
+    local user=0
+    local nice=0
+    local system=0
+    local idle=0
+    local iowait=0
+    local irq=0
+    local softirq=0
+    local steal=0
+    local xtra=''
 
     (( num_samples < 1 )) && num_samples=1 # num_samples must be > 0
+
     for (( i=0; i <= ( num_samples + 1 ); i++ )); do
-        while IFS=' ' read -r label f0 f1 f2 f3 f4 f5 f6 f7 xtra; do
+        while IFS=' ' read -r label user nice system idle iowait irq softirq steal xtra; do
             case $label in
                 (cpu)
-                    idle=$(( f3 + f4 ))
-                    busy=$(( f0 + f1 + f2 + f5 + f6 + f7 ))
+                    idle=$(( idle + iowait ))
+                    busy=$(( user + nice + system + irq + softirq + steal ))
                     total=$(( idle + busy ))
 
                     delta_total=$(( total - prev_total ))
