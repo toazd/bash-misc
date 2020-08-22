@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+#
+# Report SLOC (source lines of code) of one or more shell scripts
+# and a few other extraneous, easy to calculate stats
+#
+# Accepts multiple files as parameters (eg. from a glob pattern)
+#
+
+# When iDEBUG is set to 1, a file will be created in the same path
+# as the input file(s) with the same name as the input file(s) except
+# including a ".sloc" extension. Lines copied to the output file(s) are
+# lines that the script considered valid lines of code.
+iDEBUG=0
+
+# When iINCLUDE_SCRIPT is set to 1, the script itself can be included for processing (eg. ./script-sloc *)
+iINCLUDE_SCRIPT=0
+
+# Requires at least one parameter, the input file
+[[ -z $1 || ! -f $1 || ! -r $1 ]] && { echo "$0 <script>"; exit 0; }
+
+# Support multiple file inputs (eg. ./script-sloc *)
+while [[ -n $1 ]]; do
+
+    # Reset variables for each file
+    line=''
+    total_lines=0
+    comment_only_lines=0
+    empty_lines=0
+    sloc_total_lines=0
+    heredoc=0
+    eohd=''
+
+    # If not a file, skip
+    [[ ! -f $1 ]] && { shift; continue; }
+
+    # If iINCLUDE_SCRIPT is set to 0 and the current file is the script, skip it
+    [[ $iINCLUDE_SCRIPT -eq 0 ]] && [[ $1 -ef "$0" ]] && { shift; continue; }
+
+    # For debug only, remove an existing output file for the current file
+    [[ $iDEBUG -eq 1 ]] && { [[ -f "$1".sloc ]] && rm "$1".sloc; }
+
+    # Begin reading the current file, one line at a time
+    while IFS= read -r line; do
+
+        # Increment the total lines counter
+        total_lines=$(( total_lines + 1 ))
+
+        # If the first line doesn't begin with exactly #!/ then skip this file
+        if [[ $total_lines -eq 1 ]]; then
+            [[ $line != '#!/'* ]] && { echo "$1: Shebang not found"; shift; break 1; }
+        fi
+
+        # If the string indicating the end of a heredoc is found, stop ignoring sloc_total_lines
+        [[ $line = "$eohd" ]] && heredoc=0
+
+        # If we're not inside a heredoc, exclude blank sloc_total_lines and comment-only sloc_total_lines
+        (( ! heredoc )) && {
+            [[ -z $line ]] && { empty_lines=$(( empty_lines + 1 )); continue; }
+            #[[ $line == *'#'* ]] && comment_lines=$(( comment_lines + 1 ))
+            [[ $line =~ ^[[:blank:]]*[#]+ ]] && { comment_only_lines=$(( comment_only_lines + 1 )); continue; }
+        }
+
+        # Detect heredocs and get the end delimeter
+        [[ $line =~ ^[[:blank:]]*.*[[:space:]]+(<<).*$ && $line != @(*"<<<"*|*">>>"*) ]] && {
+            # Flag to ignore contents of heredocs
+            heredoc=1
+
+            # Anchored left, remove *<< (remove the command and the redirect operator)
+            eohd=${line#*<<}
+
+            # If the first character is " (part of a quoted heredoc)
+            [[ ${eohd:0:1} = "\"" ]] && {
+
+                # Remove the leading "
+                eohd=${eohd:1:${#eohd}}
+
+                # Anchored right, remove all instances of "*
+                eohd=${eohd%%\"*}
+
+                # End of heredoc delimiter remains
+            }
+
+            # Anchored right remove >* (part of unquoted heredoc)
+            eohd=${eohd%>*}
+
+            # Remove any remaining [[:blank:]] (space and tab)
+            eohd=${eohd//[[:blank:]]}
+
+            # End of heredoc delimiter remains
+        }
+
+        # Increment the line counter
+        sloc_total_lines=$(( sloc_total_lines + 1 ))
+
+        # For debug only, copy the line to the output file
+        [[ $iDEBUG -eq 1 ]] && printf '%s\n' "$line" >> "$1".sloc
+
+    done < "$1"
+
+    # This script can't process one line scripts
+    if [[ $total_lines -gt 1 ]]; then
+        # Report
+        printf '%s%s%s%s\n' \
+               "$1: $sloc_total_lines SLOC (~$(( ( sloc_total_lines * 100 ) / total_lines ))%), " \
+               "$comment_only_lines only comments (~$(( ( comment_only_lines * 100 ) / total_lines ))%), " \
+               "$empty_lines blank lines (~$(( ( empty_lines * 100 ) / total_lines ))%), " \
+               "$total_lines lines total"
+    # If the current file has a shebang and also contains zero or one newlines
+    # this script can't process it
+    elif [[ $total_lines -eq 0 ]]; then
+        echo "$1: Unable to process"
+    fi
+
+    # Shift the positional parameters
+    shift 1
+done
+
