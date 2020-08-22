@@ -50,10 +50,10 @@ while [[ -n $1 ]]; do
             [[ $line != '#!/'* ]] && { echo "$1: Shebang not found"; shift; break 1; }
         fi
 
-        # If the string indicating the end of a heredoc is found, stop ignoring sloc_total_lines
+        # If the string indicating the end of a heredoc is found, stop ignoring lines
         [[ $line = "$eohd" ]] && heredoc=0
 
-        # If we're not inside a heredoc, exclude blank sloc_total_lines and comment-only sloc_total_lines
+        # If we're not inside a heredoc, exclude blank lines and comment-only lines
         (( ! heredoc )) && {
             [[ -z $line ]] && { empty_lines=$(( empty_lines + 1 )); continue; }
             #[[ $line == *'#'* ]] && comment_lines=$(( comment_lines + 1 ))
@@ -62,6 +62,7 @@ while [[ -n $1 ]]; do
 
         # Detect heredocs and get the end delimeter
         [[ $line =~ ^[[:blank:]]*.*[[:space:]]+(<<).*$ && $line != @(*"<<<"*|*">>>"*) ]] && {
+
             # Flag to ignore contents of heredocs
             heredoc=1
 
