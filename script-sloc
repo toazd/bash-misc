@@ -6,10 +6,20 @@
 # Accepts multiple files as parameters (eg. from a glob pattern)
 #
 
-# When iDEBUG is set to 1, a file will be created in the same path
-# as the input file(s) with the same name as the input file(s) except
-# including a ".sloc" extension. Lines copied to the output file(s) are
-# lines that the script considered valid lines of code.
+# When iDEBUG is set to 1, .sloc* files will be created in the same path
+# as the input file(s). Each extension variation will contain different lines
+# based on what the script detected the line to be.
+#
+# The output file format is:
+# [source_line]line_content
+#
+# Examples:
+# *.sloc (lines considered valid code including heredocs)
+# *.sloc.empty (lines considered to be empty not inside heredocs)
+# *.sloc.heredoc (lines considered to be part of a heredoc including declaration, all contents, and end delimiter)
+# *.sloc.only_comments (lines considered to contain only comments not inside heredocs)
+# *.sloc.inline_comments (lines considered to contain inline comments not inside heredocs)
+#
 iDEBUG=0
 
 # When iINCLUDE_SCRIPT is set to 1, the script itself can be included for processing (eg. ./script-sloc *)
@@ -18,26 +28,31 @@ iINCLUDE_SCRIPT=0
 # Requires at least one parameter, the input file
 [[ -z $1 || ! -f $1 || ! -r $1 ]] && { echo "$0 <script>"; exit 0; }
 
-# Support multiple file inputs (eg. ./script-sloc *)
+# Support multiple file inputs via shift'ing positional parameters as needed (eg. ./script-sloc *)
 while [[ -n $1 ]]; do
+
+    # If not a file, skip
+    [[ ! -f $1 ]] && { shift; continue; }
 
     # Reset variables for each file
     line=''
     total_lines=0
+    comment_inline_lines=0
     comment_only_lines=0
     empty_lines=0
     sloc_total_lines=0
     heredoc=0
     eohd=''
 
-    # If not a file, skip
-    [[ ! -f $1 ]] && { shift; continue; }
+    # If iINCLUDE_SCRIPT is set to 0 and the current file is the script, skip this file
+    [[ $iINCLUDE_SCRIPT -eq 0 && $1 -ef "$0" ]] && { shift; continue; }
 
-    # If iINCLUDE_SCRIPT is set to 0 and the current file is the script, skip it
-    [[ $iINCLUDE_SCRIPT -eq 0 ]] && [[ $1 -ef "$0" ]] && { shift; continue; }
-
-    # For debug only, remove an existing output file for the current file
-    [[ $iDEBUG -eq 1 ]] && { [[ -f "$1".sloc ]] && rm "$1".sloc; }
+    # If debug is enabled, remove existing output files for the current file
+    [[ $iDEBUG -eq 1 ]] && {
+        for slocfile in "$1.sloc"*; do
+            [[ -f $slocfile ]] && rm -v "$slocfile"
+        done
+    }
 
     # Begin reading the current file, one line at a time
     while IFS= read -r line; do
@@ -47,23 +62,82 @@ while [[ -n $1 ]]; do
 
         # If the first line doesn't begin with exactly #!/ then skip this file
         if [[ $total_lines -eq 1 ]]; then
-            [[ $line != '#!/'* ]] && { echo "$1: Shebang not found"; shift; break 1; }
+            if [[ $line != '#!/'* ]]; then
+                echo "$1: Shebang not found"
+                shift
+                break 1
+            else
+                # Don't count the shebang as a comment line
+                continue
+            fi
         fi
 
-        # If the string indicating the end of a heredoc is found, stop ignoring lines
-        [[ $line = "$eohd" ]] && heredoc=0
+        # If the current line is not empty and it is equal to the string indicating the end of a heredoc, stop ignoring lines
+        [[ -n $line && $line = "$eohd" ]] && {
 
-        # If we're not inside a heredoc, exclude blank lines and comment-only lines
-        (( ! heredoc )) && {
-            [[ -z $line ]] && { empty_lines=$(( empty_lines + 1 )); continue; }
-            #[[ $line == *'#'* ]] && comment_lines=$(( comment_lines + 1 ))
-            [[ $line =~ ^[[:blank:]]*[#]+ ]] && { comment_only_lines=$(( comment_only_lines + 1 )); continue; }
+            # "Boolean" flag used to ignore contents of heredocs
+            heredoc=0
+
+            # If debug is enabled, log lines considered to be part of a heredoc
+            [[ $iDEBUG -eq 1 ]] && printf '%s\n' "[$total_lines]$line" >> "$1".sloc.heredoc
         }
 
-        # Detect heredocs and get the end delimeter
-        [[ $line =~ ^[[:blank:]]*.*[[:space:]]+(<<).*$ && $line != @(*"<<<"*|*">>>"*) ]] && {
+        # If we're not inside a heredoc
+        if [[ $heredoc -eq 0 ]]; then
+            [[ -z $line ]] && {
 
-            # Flag to ignore contents of heredocs
+                # Increment the empty line counter
+                empty_lines=$(( empty_lines + 1 ))
+
+                # If debug is enabled, log lines considered to be empty
+                [[ $iDEBUG -eq 1 ]] && printf '%s\n' "[$total_lines]$line" >> "$1".sloc.empty
+
+                # Don't count this line as anything else
+                continue
+            }
+
+            # Comment only lines are lines that begin with # and also lines that have only space and/or tab preceding #
+            [[ $line =~ ^[[:blank:]]*#+ ]] && {
+
+                # Increment the comment only counter
+                comment_only_lines=$(( comment_only_lines + 1 ))
+
+                # If debug is enabled, log lines considered containing only a comment/comments
+                [[ $iDEBUG -eq 1 ]] && printf '%s\n' "[$total_lines]$line" >> "$1".sloc.only_comments
+
+                # Don't count this line as anything else
+                continue
+            }
+
+            # Detect lines with comments and code (inline comments) that are not preceded by only space(s) and/or tab(s)
+            [[ $line =~ [[:print:]]+[^[:blank:]][[:blank:]]+#.*$ ]] && {
+
+                # Increment the inline comment counter
+                comment_inline_lines=$(( comment_inline_lines + 1 ))
+
+                # If debug is enabled, log lines considered to contain inline comments
+                [[ $iDEBUG -eq 1 ]] && printf '%s\n' "[$total_lines]$line" >> "$1".sloc.inline_comments
+            }
+        # If we are inside a heredoc
+        elif [[ $heredoc -eq 1 ]]; then
+
+            # If debug is enabled, log lines considered to be part of a heredoc
+            [[ $iDEBUG -eq 1 ]] && printf '%s\n' "[$total_lines]$line" >> "$1".sloc.heredoc
+        fi
+
+        # NOTE Match valid herestrings
+        #.*[[:blank:]]+<<<[[:blank:]]*
+
+        # Detect heredocs and then get the end delimeter
+        # NOTE A variable is used to store the heredoc regex to avoid unecessary
+        #      complexities and potential issues with escaping characters, namely <
+        heredoc_regex='^[[:blank:]]*.*[[:blank:]]+<<[^<].*$'
+        [[ $line =~ $heredoc_regex ]] && {
+
+            # If debug is enabled, log lines considered to be part of a heredoc
+            [[ $iDEBUG -eq 1 ]] && printf '%s\n' "[$total_lines]$line" >> "$1".sloc.heredoc
+
+            # "Boolean" flag used to ignore contents of heredocs
             heredoc=1
 
             # Anchored left, remove *<< (remove the command and the redirect operator)
@@ -90,29 +164,43 @@ while [[ -n $1 ]]; do
             # End of heredoc delimiter remains
         }
 
-        # Increment the line counter
+        # Increment the sloc lines counter
         sloc_total_lines=$(( sloc_total_lines + 1 ))
 
-        # For debug only, copy the line to the output file
-        [[ $iDEBUG -eq 1 ]] && printf '%s\n' "$line" >> "$1".sloc
+        # If debug is enabled, log lines considered to be LOC
+        [[ $iDEBUG -eq 1 ]] && printf '%s\n' "[$total_lines]$line" >> "$1".sloc
 
     done < "$1"
 
-    # This script can't process one line scripts
+    # This particular script can't process one line scripts
     if [[ $total_lines -gt 1 ]]; then
+
+        # Calculate
+        sloc_total_lines_percent=$(( ( sloc_total_lines * 100 ) / total_lines ))
+
+        total_comment_lines=$(( comment_only_lines + comment_inline_lines ))
+        total_comment_lines_percent=$(( ( total_comment_lines * 100 ) / total_lines ))
+
+        comment_only_lines_percent=$(( ( comment_only_lines * 100 ) / total_comment_lines ))
+        #comment_only_lines_percent=$(bc -l <<< "scale=2; ( $comment_only_lines * 100 ) / $total_comment_lines")
+
+        comment_inline_lines_percent=$(( ( comment_inline_lines * 100 ) / total_comment_lines ))
+        #comment_inline_lines_percent=$(bc -l <<< "scale=2; ( $comment_inline_lines * 100 ) / $total_comment_lines")
+
+        empty_lines_percent=$(( ( empty_lines * 100 ) / total_lines ))
+        #sloc_to_notsloc_ratio=$(bc -l <<< "scale=2; $sloc_total_lines / ( $total_lines - $sloc_total_lines )")
+
         # Report
-        printf '%s%s%s%s\n' \
-               "$1: $sloc_total_lines SLOC (~$(( ( sloc_total_lines * 100 ) / total_lines ))%), " \
-               "$comment_only_lines only comments (~$(( ( comment_only_lines * 100 ) / total_lines ))%), " \
-               "$empty_lines blank lines (~$(( ( empty_lines * 100 ) / total_lines ))%), " \
-               "$total_lines lines total"
+        printf '%s' "$1: $sloc_total_lines/$total_lines SLOC (~$sloc_total_lines_percent%), "
+        printf '%s' "$total_comment_lines comments (~$total_comment_lines_percent%) [S:~$comment_only_lines_percent% I:~$comment_inline_lines_percent%], "
+        printf '%s\n' "$empty_lines empty (~$empty_lines_percent%)"
+
     # If the current file has a shebang and also contains zero or one newlines
     # this script can't process it
-    elif [[ $total_lines -eq 0 ]]; then
+    elif [[ $total_lines -lt 1 ]]; then
         echo "$1: Unable to process"
     fi
 
-    # Shift the positional parameters
+    # Shift the positional parameters (process the next file, if any)
     shift 1
 done
-
