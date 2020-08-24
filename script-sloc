@@ -20,7 +20,7 @@
 # *.sloc.only_comments (lines considered to contain only comments that are not part of a heredoc)
 # *.sloc.inline_comments (lines considered to contain inline comments including heredoc declarations but not including the contents of heredocs)
 #
-iDEBUG=1
+iDEBUG=0
 
 # When iINCLUDE_SCRIPT is set to 1, the script itself can be included for processing (eg. ./script-sloc *)
 iINCLUDE_SCRIPT=0
