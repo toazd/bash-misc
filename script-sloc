@@ -1,25 +1,22 @@
 #!/usr/bin/env bash
-#
+###############################################################################
 # Report SLOC (source lines of code) of one or more shell scripts
-# and a few other extraneous, easy to calculate stats
-#
-# Accepts multiple files as parameters (eg. from a glob pattern)
+# Accepts one or more script files as parameters
 #
 
 # When iDEBUG is set to 1, .sloc* files will be created in the same path
-# as the input file(s). Each extension variation will contain different lines
-# based on what the script detected the line to be.
+# as the input file(s). Each .sloc* file will contain a copy of lines
+# from the source file based on what the script detected the line to be.
 #
 # The output file format is:
 # [source_line]line_content
 #
 # Examples:
-# *.sloc (lines considered valid code including heredocs)
-# *.sloc.empty (lines considered to be empty that are not inside a heredoc)
-# *.sloc.heredoc (lines considered to be part of a heredoc: declaration, contents, and end delimiter)
-# *.sloc.only_comments (lines considered to contain only comments that are not part of a heredoc)
-# *.sloc.inline_comments (lines considered to contain inline comments including heredoc declarations but not including the contents of heredocs)
-#
+# *.sloc                 (valid code including heredoc contents)
+# *.sloc.empty           (empty lines that are not inside a heredoc)
+# *.sloc.heredoc         (heredoc declaration, contents, and end delimiter)
+# *.sloc.only_comments   (lines that contain only comments and are not part of heredoc contents)
+# *.sloc.inline_comments (lines that contain comments preceded by non-whitespace characters that are also not part of heredoc contents)
 iDEBUG=0
 
 # When iINCLUDE_SCRIPT is set to 1, the script itself can be included for processing (eg. ./script-sloc *)
