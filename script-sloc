@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
-###############################################################################
-# Report SLOC (source lines of code) of one or more shell scripts
-# Accepts one or more script files as parameters
+#
+# Report SLOC (source lines of code) of one or more shell scripts.
+#
+# Accepts one or more script files as parameters.
+#  A script is considered valid if the first line begins
+#  with exactly the characters #!/
+#
+# The shebang is not included in calculations.
 #
 
 # When iDEBUG is set to 1, .sloc* files will be created in the same path
@@ -25,6 +30,11 @@ iINCLUDE_SCRIPT=0
 # Requires at least one parameter, the input file
 [[ -z $1 || ! -f $1 || ! -r $1 ]] && { echo "$0 <script>"; exit 0; }
 
+# Requires bc to calculate SLOC/comment and comment/SLOC ratios
+if ! command -v bc >/dev/null; then
+    echo "bc is required for ratio calculations"
+fi
+
 # Support multiple file inputs via shift'ing positional parameters as needed (eg. ./script-sloc *)
 while [[ -n $1 ]]; do
 
@@ -35,7 +45,7 @@ while [[ -n $1 ]]; do
     line=''
     total_lines=0
     comment_inline_lines=0
-    comment_only_lines=0
+    comment_standalone_lines=0
     empty_lines=0
     sloc_total_lines=0
     heredoc=0
@@ -97,7 +107,7 @@ while [[ -n $1 ]]; do
             [[ $line =~ ^[[:blank:]]*#+ ]] && {
 
                 # Increment the comment only counter
-                comment_only_lines=$(( comment_only_lines + 1 ))
+                comment_standalone_lines=$(( comment_standalone_lines + 1 ))
 
                 # If debug is enabled, log lines considered containing only a comment/comments
                 [[ $iDEBUG -eq 1 ]] && printf '%s\n' "[$total_lines]$line" >> "$1".sloc.only_comments
@@ -177,24 +187,31 @@ while [[ -n $1 ]]; do
     # This particular script can't process one line scripts
     if [[ $total_lines -gt 1 ]]; then
 
+        # Exclude the shebang line from calculations
+        total_lines=$(( total_lines - 1 ))
+
         # Calculate
         sloc_total_lines_percent=$(( ( sloc_total_lines * 100 ) / total_lines ))
 
-        total_comment_lines=$(( comment_only_lines + comment_inline_lines ))
-        total_comment_lines_percent=$(( ( total_comment_lines * 100 ) / total_lines ))
+        comment_total_lines=$(( comment_standalone_lines + comment_inline_lines ))
+        comment_total_lines_percent=$(( ( comment_total_lines * 100 ) / total_lines ))
 
-        comment_only_lines_percent=$(( ( comment_only_lines * 100 ) / total_comment_lines ))
-        #comment_only_lines_percent=$(bc -l <<< "scale=2; ( $comment_only_lines * 100 ) / $total_comment_lines")
+        comment_standalone_lines_percent=$(( ( comment_standalone_lines * 100 ) / comment_total_lines ))
+        #comment_standalone_lines_percent=$(bc -l <<< "scale=2; ( $comment_standalone_lines * 100 ) / $comment_total_lines")
 
-        comment_inline_lines_percent=$(( ( comment_inline_lines * 100 ) / total_comment_lines ))
-        #comment_inline_lines_percent=$(bc -l <<< "scale=2; ( $comment_inline_lines * 100 ) / $total_comment_lines")
+        comment_inline_lines_percent=$(( ( comment_inline_lines * 100 ) / comment_total_lines ))
+        #comment_inline_lines_percent=$(bc -l <<< "scale=2; ( $comment_inline_lines * 100 ) / $comment_total_lines")
 
         empty_lines_percent=$(( ( empty_lines * 100 ) / total_lines ))
-        #sloc_to_notsloc_ratio=$(bc -l <<< "scale=2; $sloc_total_lines / ( $total_lines - $sloc_total_lines )")
+
+        #sloc_to_comment_ratio=$(( sloc_total_lines / comment_total_lines ))
+        sloc_to_comment_ratio=$(bc -l <<< "scale=3; $sloc_total_lines / $comment_total_lines")
+
+        comment_to_sloc_ratio=$(bc -l <<< "scale=3; $comment_total_lines / $sloc_total_lines")
 
         # Report
-        printf '%s' "$1: $sloc_total_lines/$total_lines SLOC (~$sloc_total_lines_percent%), "
-        printf '%s' "$total_comment_lines comments (~$total_comment_lines_percent%) [S:~$comment_only_lines_percent% I:~$comment_inline_lines_percent%], "
+        printf '%s%4.2f%s' "$1: $sloc_total_lines/$total_lines SLOC (~$sloc_total_lines_percent%) [SLOC/Comment:" "$sloc_to_comment_ratio" "], "
+        printf '%s%4.2f%s' "$comment_total_lines comments (~$comment_total_lines_percent%) [S:~$comment_standalone_lines_percent%,I:~$comment_inline_lines_percent%] [Comment/SLOC:" "$comment_to_sloc_ratio" "], "
         printf '%s\n' "$empty_lines empty (~$empty_lines_percent%)"
 
     # If the current file has a shebang and also contains zero or one newlines
