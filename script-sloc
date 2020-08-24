@@ -15,12 +15,12 @@
 #
 # Examples:
 # *.sloc (lines considered valid code including heredocs)
-# *.sloc.empty (lines considered to be empty not inside heredocs)
-# *.sloc.heredoc (lines considered to be part of a heredoc including declaration, all contents, and end delimiter)
-# *.sloc.only_comments (lines considered to contain only comments not inside heredocs)
-# *.sloc.inline_comments (lines considered to contain inline comments not inside heredocs)
+# *.sloc.empty (lines considered to be empty that are not inside a heredoc)
+# *.sloc.heredoc (lines considered to be part of a heredoc: declaration, contents, and end delimiter)
+# *.sloc.only_comments (lines considered to contain only comments that are not part of a heredoc)
+# *.sloc.inline_comments (lines considered to contain inline comments including heredoc declarations but not including the contents of heredocs)
 #
-iDEBUG=0
+iDEBUG=1
 
 # When iINCLUDE_SCRIPT is set to 1, the script itself can be included for processing (eg. ./script-sloc *)
 iINCLUDE_SCRIPT=0
@@ -161,7 +161,12 @@ while [[ -n $1 ]]; do
             # Remove any remaining [[:blank:]] (space and tab)
             eohd=${eohd//[[:blank:]]}
 
+            # Remove any potential comments
+            eohd=${eohd%%#*}
+
             # End of heredoc delimiter remains
+            printf '%s\n' "$line" >> "$1".sloc.heredoc_test
+            printf '%s\n' "$eohd" >> "$1".sloc.heredoc_test
         }
 
         # Increment the sloc lines counter
