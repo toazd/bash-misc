@@ -172,8 +172,6 @@ while [[ -n $1 ]]; do
             eohd=${eohd%%#*}
 
             # End of heredoc delimiter remains
-            printf '%s\n' "$line" >> "$1".sloc.heredoc_test
-            printf '%s\n' "$eohd" >> "$1".sloc.heredoc_test
         }
 
         # Increment the sloc lines counter
@@ -210,9 +208,9 @@ while [[ -n $1 ]]; do
         comment_to_sloc_ratio=$(bc -l <<< "scale=3; $comment_total_lines / $sloc_total_lines")
 
         # Report
-        printf '%s%4.2f%s' "$1: $sloc_total_lines/$total_lines SLOC (~$sloc_total_lines_percent%) [SLOC/Comment:" "$sloc_to_comment_ratio" "], "
-        printf '%s%4.2f%s' "$comment_total_lines comments (~$comment_total_lines_percent%) [S:~$comment_standalone_lines_percent%,I:~$comment_inline_lines_percent%] [Comment/SLOC:" "$comment_to_sloc_ratio" "], "
-        printf '%s\n' "$empty_lines empty (~$empty_lines_percent%)"
+        printf '%s%4.2f%s' "$1: $sloc_total_lines/$total_lines SLOC ($sloc_total_lines_percent%) [SLOC/Comment:" "$sloc_to_comment_ratio" "], "
+        printf '%s%4.2f%s' "$comment_total_lines comments ($comment_total_lines_percent%) [S:$comment_standalone_lines_percent%,I:$comment_inline_lines_percent%] [Comment/SLOC:" "$comment_to_sloc_ratio" "], "
+        printf '%s\n' "$empty_lines empty ($empty_lines_percent%)"
 
     # If the current file has a shebang and also contains zero or one newlines
     # this script can't process it
