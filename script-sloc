@@ -8,6 +8,12 @@
 #
 # The shebang is not included in calculations.
 #
+# NOTE Multi-line herestrings are currently not supported and will be
+#      categorized according to the content similar to any other normal
+#      line (unlike heredocs). This means a comment in a multi-line herestring
+#      will be counted as a comment line and empty lines will be counted
+#      towards the empty line counter.
+#
 
 # When iDEBUG is set to 1, .sloc* files will be created in the same path
 # as the input file(s). Each .sloc* file will contain a copy of lines
