@@ -171,6 +171,9 @@ while [[ -n $1 ]]; do
             # Anchored right remove >* (part of unquoted heredoc)
             eohd=${eohd%>*}
 
+            # If the last character is >, remove it
+            [[ ${eohd:$(( ${#eohd} - 1 )):1} = '>' ]] && eohd=${eohd:0:$(( ${#eohd} - 1 ))}
+
             # Remove any remaining [[:blank:]] (space and tab)
             eohd=${eohd//[[:blank:]]}
 
