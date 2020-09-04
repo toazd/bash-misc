@@ -23,9 +23,9 @@
 declare file_in element file_out
 declare -a unique_list
 declare -i i=0 lines_in=0 progress=0 prev_progress=1
+# NOTE: remove_empty has no effect if ignore_empty=1
 declare -i ignore_empty=1 # 1 = Ignore (preserve) empty lines, 0 = Do not ignore empty lines
 declare -i remove_empty=1 # 1 = Remove all empty lines, 0 = De-duplicate empty lines
-                           # NOTE: Has no effect if ignore_empty=1
 
 # No parameters, show usage
 (( $# < 1 )) && { echo "${0##*/} <file> ..."; exit 1; }
