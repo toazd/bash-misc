@@ -22,7 +22,7 @@
 
 declare file_in element file_out
 declare -a unique_list
-declare -i i=0 lines_in=0 progress=0 prev_progress=1
+declare -i i=0 lines_in=0 progress=0 prev_progress=1 exit_status=0
 # NOTE: remove_empty has no effect if ignore_empty=1
 declare -i ignore_empty=1 # 1 = Ignore (preserve) empty lines, 0 = Do not ignore empty lines
 declare -i remove_empty=1 # 1 = Remove all empty lines, 0 = De-duplicate empty lines
@@ -72,7 +72,7 @@ while [[ $1 ]]; do
     fi
 
     # If SIGINT (Ctrl-C) while processing, remove the current, partially processed temp file
-    trap 'printf "\r\033[0K" 1>&2; rm -vf "$file_out" 1>&2; exit' INT
+    trap 'exit_status=$?; printf "\r\033[0K" 1>&2; rm -vf "$file_out" 1>&2; exit $exit_status' INT
 
     # Print a report of what's being worked on next and save the cursor position
     printf '%s\n%s\n%s\033[s' "Input: $file_in" "Temp: $file_out" "Processing $file_in"
