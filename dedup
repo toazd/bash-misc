@@ -5,8 +5,9 @@
 # Toazd 2020 Unlicense https://unlicense.org/                                 #
 #                                                                             #
 #  dedup <file> ...                                                           #
-#   De-duplicate the specified file(s) based on line content delimited by     #
-#   newlines preserving the original order. Optionally, empty lines may be    #
+#   De-duplicate the specified file(s) using only Bash.                       #
+#   Uniqueness is determined based on line content delimited by newlines and  #
+#   the original line order is preserved. Optionally, empty lines may be      #
 #   preserved (default), removed, or de-duplicated.                           #
 #                                                                             #
 #   If ignore_empty=1 empty lines will be preserved (default: 1)              #
