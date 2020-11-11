@@ -1,0 +1,1 @@
+calc() { printf 'scale=2; %s\n' "$1" | bc; }

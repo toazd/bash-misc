@@ -1,0 +1,12 @@
+#!/bin/bash
+
+cat <<< "1singleline herestring"
+cat <<<"2singleline herestring"
+
+cat <<< "3singleline herestring comment # test"
+
+cat <<< "1multiline
+herestring
+with
+# a comment
+"

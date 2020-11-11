@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+
+declare -i i=0
+declare -a names labels inputs
+
+for name in /sys/class/hwmon/hwmon?/name; do
+    #echo "${name%/name*}"
+    [[ -r ${name%/name*}/temp1_input ]] && cat "$name"
+done
+
+for node in /sys/class/hwmon/hwmon?/temp?_{l,i}*; do
+    [[ -r $node ]] && {
+        echo "node: $node"
+        index=${node%/*}
+        index=${index#*hwmon/hwmon}
+        basepath=${node%/*}
+        #echo "basepath: $basepath"
+        case $node in
+            *temp?_l*)
+                names+=("$(cat "$basepath/name")$index")
+                labels+=("$(cat "$node")")
+            ;;
+            *temp?_i*)
+                #names+=("$(cat "$basepath/name")$index")
+                inputs+=("$(cat "$node")")
+            ;;
+        esac
+    }
+done
+
+echo "#names:  ${#names[@]}"
+echo "#labels: ${#labels[@]}"
+echo "#inputs: ${#inputs[@]}"
+
+for i in "${!labels[@]}"; do
+    printf '%s %s %s\n' "${names[i]}" "${labels[i]}" "${inputs[i]}"
+done
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+exit
+
+
+for sensor in /sys/class/hwmon/hwmon?/{name,temp?_label,temp?_input}; do
+    echo "$sensor"
+    [[ -r $sensor ]] && {
+        case $sensor in
+            *name)
+                index=${sensor/'/sys/class/hwmon/hwmon'}
+                index=${index/'/name'}
+                names+=("$(cat "$sensor")$index")
+            ;;
+            *temp?_label)
+                index=${sensor/'/sys/class/hwmon/'}
+                index=${index%\_label*}
+                labels+=("$index: $(cat "$sensor")")
+            ;;
+            *temp?_input)
+                index=${sensor/'/sys/class/hwmon/'}
+                index=${index%_input*}
+                inputs+=("$index: $(cat "$sensor")")
+            ;;
+        esac
+    }
+done
+
+echo "#names:  ${#names[@]}"
+echo "#labels: ${#labels[@]}"
+echo "#inputs: ${#inputs[@]}"
+
+echo "names:  ${names[*]}"
+echo "labels: ${labels[*]}"
+echo "inputs: ${inputs[*]}"
+
+
+for i in "${!labels[@]}"; do
+    printf '%s\t%s\n' "${labels[i]}" "${inputs[i]}"
+done

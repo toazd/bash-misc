@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+# requires root
+#[[ $(id -un) != 'root' ]] && { echo "root required"; exit 1; }
+
+for file in "/home/toazd/.local/share/gnome-boxes/images/"*; do
+
+    file_type=$(file "$file")
+    [[ ${file_type,,} == *'qcow2'* ]] || continue
+
+    before_size_bytes=$(stat -c '%s' -- "$file")
+    echo "Checking $file ($before_size_bytes)"
+
+    if qemu-img convert -O qcow2 -- "$file" "$file".shrunk; then
+
+        after_size_bytes=$(stat -c '%s' -- "$file".shrunk)
+        echo "${file}.shrunk ($after_size_bytes)"
+
+        if [[ $after_size_bytes -lt $before_size_bytes ]]; then
+            echo "New file is smaller, overwriting original (-$(( before_size_bytes - after_size_bytes )) bytes)"
+            if mv -- "$file".shrunk "$file"; then
+                echo "Move succeeded"
+            else
+                echo "Move failed"
+            fi
+        else
+            echo "New file is not smaller, discarding copy"
+            if rm -- "$file".shrunk; then
+                echo "Remove succeeded"
+            else
+                echo "Remove failed: ${file}.shrunk"
+            fi
+        fi
+    else
+        echo "qemu-img failed"
+        [[ -f ${file}.shrunk ]] && {
+            echo "Removing partial copy"
+            if rm -- "$file".shrunk; then
+                echo "Remove succeeded"
+            else
+                echo "Remove failed: ${file}.shrunk"
+            fi
+        }
+    fi
+done
