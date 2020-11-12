@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+declare -a files=() checksums=()
+declare ssh_string='ssh' \
+        connect_to='toazd@localhost' \
+        ciphers='aes256-gcm@openssh.com,aes256-ctr,aes256-cbc' \
+        checksum=sha512sum \
+        base_path=${1:-'/home/toazd/github/personal/'} \
+        time_start=0 \
+        time_end=0 \\
+        i=0
+
+FindFiles() {
+
+    # Parse the output of find via ssh, adding each column element to its respective array
+    time_start=$(date '+%s')
+    while IFS= read -r || [[ -n $REPLY ]]; do
+        [[ $REPLY =~ ^$'\n'$ ]] && continue
+        files+=("${REPLY##*[[:blank:]]}")
+        checksums+=("${REPLY%%[[:blank:]]*}")
+    done < <("$ssh_string" -c "$ciphers" "$connect_to" find "$base_path" -type f -exec "$checksum" '{}' + \; | LC_ALL=C sort -fk2.3) # parameter expansion version (full path is in array, faster)
+    ##done < <("$ssh_string" -c "$ciphers" "$connect_to" find "$base_path" -type f -exec "$checksum" '{}' + \; | LC_ALL=C sort -fk2.3 | sed "s|$base_path||g") # sed version (base_path is not in array, slower)
+    time_end=$(date '+%s')
+
+    # Report
+    printf '%s\n' "Found ${#files[@]} files and calculated ${#checksums[@]} checksums in $(( time_end - time_start )) seconds"
+
+}
+
+ListAllFiles() {
+
+    # List each element of each array in a similar format to {md,sha}*sum
+    for i in "${!files[@]}"; do
+        printf '%s  %s\n' "${checksums[i]/#$base_path}" "${files[i]/#$base_path}" # parameter expansion version (full path is in array, faster)
+        ##printf '%s  %s\n' "${checksums[i]}" "${files[i]}" # sed version (base_path is not in array, slower)
+    done
+
+}
+
+FindFiles
+##ListAllFiles
