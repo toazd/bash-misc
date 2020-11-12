@@ -18,7 +18,7 @@ FindFiles() {
         [[ $REPLY =~ ^$'\n'$ ]] && continue
         files+=("${REPLY##*[[:blank:]]}")
         checksums+=("${REPLY%%[[:blank:]]*}")
-    done < <("$ssh_string" -c "$ciphers" "$connect_to" find "$base_path" -type f -exec "$checksum" '{}' + \; | LC_ALL=C sort -fk2.3) # parameter expansion version (full path is in array, faster)
+    done < <("$ssh_string" -c "$ciphers" "$connect_to" find "$base_path" -type f -exec "$checksum" '{}' + \; 2>/dev/null | LC_ALL=C sort -fk2.3) # parameter expansion version (full path is in array, faster)
     ##done < <("$ssh_string" -c "$ciphers" "$connect_to" find "$base_path" -type f -exec "$checksum" '{}' + \; | LC_ALL=C sort -fk2.3 | sed "s|$base_path||g") # sed version (base_path is not in array, slower)
     time_end=$(date '+%s')
 
