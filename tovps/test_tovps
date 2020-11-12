@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 
+# $1 parameter = user@host
+# $2 parameter = remote path to search
+
 declare -a files=() checksums=()
 declare ssh_string='ssh' \
-        connect_to='toazd@localhost' \
+        connect_to=${1:-'toazd@localhost'} \
         ciphers='aes256-gcm@openssh.com,aes256-ctr,aes256-cbc' \
         checksum=sha512sum \
-        base_path=${1:-'/tmp'} \
+        base_path=${2:-'/tmp'} \
         time_start=0 \
         time_end=0 \
         i=0
