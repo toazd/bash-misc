@@ -24,10 +24,11 @@ FindFilesandChecksums()
     time_start=$(date '+%s')
     while IFS= read -r || [[ -n $REPLY ]]
     do
-        [[ $REPLY =~ ^$'\n'$ ]] && continue
+        # Replace double forward-slash "//" with single forward-slash "/"
+        files+=("${REPLY//'//'/'/'}")
         files+=("${REPLY##*[[:blank:]]}")
         checksums+=("${REPLY%%[[:blank:]]*}")
-    done < <("$ssh_string" -c "$ciphers" "$connect_to" find "$base_path" -type f  ! -path '*dev/*' ! -path '*proc/*' -exec "$checksum" '{}' + \; 2>/dev/null | LC_ALL=C sort -fk2.3) #  | sed "s|$base_path||g"
+    done < <("$ssh_string" -c "$ciphers" "$connect_to" find "$base_path" -type f  -exec "$checksum" '{}' + \; 2>/dev/null | LC_ALL=C sort -fk2.3) #  | sed "s|$base_path||g"
     time_end=$(date '+%s')
 
     # Report
@@ -44,9 +45,9 @@ FindSortFiles()
     time_start=$(date '+%s')
     while IFS= read -r || [[ -n $REPLY ]]
     do
-        [[ $REPLY =~ ^$'\n'$ ]] && continue
+        # Replace double forward-slash "//" with single forward-slash "/"
         files+=("${REPLY//'//'/'/'}")
-    done < <("$ssh_string" -c "$ciphers" "$connect_to" find "$base_path" -type f ! -path '*dev/*' ! -path '*proc/*' 2>/dev/null | LC_ALL=C sort -f) # ! -path '*.git*'
+    done < <("$ssh_string" -c "$ciphers" "$connect_to" find "$base_path" -type f 2>/dev/null | LC_ALL=C sort -f) # ! -path '*.git*'
     time_end=$(date '+%s')
 
     # Report
@@ -63,16 +64,19 @@ FindFiles()
     time_start=$(date '+%s')
     while IFS= read -r || [[ -n $REPLY ]]
     do
-        [[ $REPLY =~ ^$'\n'$ ]] && continue
+        # Remove base_path from the file names
+        ##REPLY=${REPLY/#"/$base_path"}
+
+        # Replace double forward-slash "//" with single forward-slash "/"
         files+=("${REPLY//'//'/'/'}")
         ##printf '%s\n' "${REPLY//'//'/'/'}" >> "findfiles_log"
-    done < <("$ssh_string" -c "$ciphers" "$connect_to" find "$base_path/" -type f ! -name 'globstar_log' ! -name 'findfiles_log' ! -path '*dev/*' ! -path '*proc/*' 2>/dev/null) # ! -path '*.git*'
+    done < <("$ssh_string" -c "$ciphers" "$connect_to" find "$base_path/" -type f 2>/dev/null) # ! -path '*.git*'
     time_end=$(date '+%s')
 
     ##sort "findfiles_log" -o "findfiles_log"
 
     # Report
-    printf '%s\n' "Found ${#files[@]} files in $(( time_end - time_start )) seconds"
+    printf '%s\n' "Found ${#files[@]} files using find in $(( time_end - time_start )) seconds"
 
 }
 
@@ -84,6 +88,10 @@ FindFilesGlobstar() {
     time_start=$(date '+%s')
     while IFS= read -r || [[ -n $REPLY ]]
     do
+        # Remove base_path from the file names
+        ##REPLY=${REPLY/#"/$base_path"}
+
+        # Replace double forward-slash "//" with single forward-slash "/"
         files+=("${REPLY//'//'/'/'}")
         ##printf '%s\n' "${REPLY//'//'/'/'}" >> "globstar_log"
     done < <("$ssh_string" -c "$ciphers" "$connect_to" bash -s <<EOF
@@ -91,10 +99,8 @@ FindFilesGlobstar() {
 shopt -s globstar dotglob nullglob
 for i in "$base_path/"**
 do
-# ignore symbolic links and the base path being searched
-[[ -L \$i || \$i -ef "$base_path" ]] && continue
-# ignore all but files
-[[ -f \$i ]] && printf '%s\n' "\$i"
+[[ ! -f \$i || -L \$i || -h \$i || \$i -ef "$base_path" ]] && continue
+printf '%s\n' "\$i"
 done
 EOF
 )
@@ -103,7 +109,7 @@ EOF
     ##sort "globstar_log" -o "globstar_log"
 
     # Report
-    printf '%s\n' "Found ${#files[@]} files using shopt globstar in $(( time_end - time_start )) seconds"
+    printf '%s\n' "Found ${#files[@]} files using globstar in $(( time_end - time_start )) seconds"
 
 }
 
