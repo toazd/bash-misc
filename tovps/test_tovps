@@ -35,7 +35,7 @@ FindFilesandChecksums()
 
 }
 
-FindFiles()
+FindSortFiles()
 {
 
     files=()
@@ -51,6 +51,25 @@ FindFiles()
 
     # Report
     printf '%s\n' "Found and sorted ${#files[@]} files in $(( time_end - time_start )) seconds"
+
+}
+
+FindFiles()
+{
+
+    files=()
+
+    # Parse the output of find via ssh, adding each column element to its respective array
+    time_start=$(date '+%s')
+    while IFS= read -r || [[ -n $REPLY ]]
+    do
+        [[ $REPLY =~ ^$'\n'$ ]] && continue
+        files+=("$REPLY")
+    done < <("$ssh_string" -c "$ciphers" "$connect_to" find "$base_path" -type f ! -path '*dev/*' ! -path '*proc/*' 2>/dev/null) # ! -path '*.git*'
+    time_end=$(date '+%s')
+
+    # Report
+    printf '%s\n' "Found ${#files[@]} files in $(( time_end - time_start )) seconds"
 
 }
 
@@ -92,5 +111,6 @@ QueryHostCiphers()
 ##FindFilesandChecksums
 ##ListAllFiles
 
+##FindSortFiles
 FindFiles
-PrintFiles
+##PrintFiles
