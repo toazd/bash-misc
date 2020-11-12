@@ -6,18 +6,20 @@
 declare -a files=() checksums=()
 declare ssh_string='ssh' \
         connect_to=${1:-'user@host'} \
-        ciphers='aes256-gcm@openssh.com,aes256-ctr,aes256-cbc' \
-        checksum=sha512sum \
+        ciphers='chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com' \
+        checksum=sha256sum \
         base_path=${2:-'/tmp'} \
         time_start=0 \
         time_end=0 \
         i=0
 
-FindFiles() {
+FindFiles()
+{
 
     # Parse the output of find via ssh, adding each column element to its respective array
     time_start=$(date '+%s')
-    while IFS= read -r || [[ -n $REPLY ]]; do
+    while IFS= read -r || [[ -n $REPLY ]]
+    do
         [[ $REPLY =~ ^$'\n'$ ]] && continue
         files+=("${REPLY##*[[:blank:]]}")
         checksums+=("${REPLY%%[[:blank:]]*}")
@@ -30,15 +32,30 @@ FindFiles() {
 
 }
 
-ListAllFiles() {
+ListAllFiles()
+{
 
     # List each element of each array in a similar format to {md,sha}*sum
-    for i in "${!files[@]}"; do
+    for i in "${!files[@]}"
+    do
         printf '%s  %s\n' "${checksums[i]/#$base_path}" "${files[i]/#$base_path}" # parameter expansion version (full path is in array, faster)
         ##printf '%s  %s\n' "${checksums[i]}" "${files[i]}" # sed version (base_path is not in array, slower)
     done
 
 }
 
+QueryHostCiphers()
+{
+
+    opts=(cipher cipher-auth mac kex key key-cert key-plain key-sig sig)
+    for option in "${opts[@]}"
+    do
+        printf '\n%s\n' "$option:"
+        "$ssh_string" -Q "$option" "$connect_to"
+    done
+
+}
+
+##QueryHostCiphers
 FindFiles
 ##ListAllFiles
