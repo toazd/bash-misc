@@ -2,18 +2,19 @@
 
 # $1 parameter = user@host
 # $2 parameter = remote path to search
+# $3 parameter = checksum application (md5sum, sha256sum, sha512sum, etc.)
 
 declare -a files=() checksums=()
 declare ssh_string='ssh' \
         connect_to=${1:-'user@host'} \
         ciphers='chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com' \
-        checksum=sha512sum \
+        checksum=${3:-'sha512sum'} \
         base_path=${2:-'/tmp'} \
         time_start=0 \
         time_end=0 \
         i=0
 
-FindandChecksums()
+FindFilesandChecksums()
 {
 
     files=()
@@ -26,8 +27,7 @@ FindandChecksums()
         [[ $REPLY =~ ^$'\n'$ ]] && continue
         files+=("${REPLY##*[[:blank:]]}")
         checksums+=("${REPLY%%[[:blank:]]*}")
-    done < <("$ssh_string" -c "$ciphers" "$connect_to" find "$base_path" -type f -exec "$checksum" '{}' + \; 2>/dev/null | LC_ALL=C sort -fk2.3) # parameter expansion version (full path is in array, faster)
-    ##done < <("$ssh_string" -c "$ciphers" "$connect_to" find "$base_path" -type f -exec "$checksum" '{}' + \; | LC_ALL=C sort -fk2.3 | sed "s|$base_path||g") # sed version (base_path is not in array, slower)
+    done < <("$ssh_string" -c "$ciphers" "$connect_to" find "$base_path" -type f  ! -path '*dev/*' ! -path '*proc/*' -exec "$checksum" '{}' + \; 2>/dev/null | LC_ALL=C sort -fk2.3) #  | sed "s|$base_path||g"
     time_end=$(date '+%s')
 
     # Report
@@ -46,7 +46,7 @@ FindFiles()
     do
         [[ $REPLY =~ ^$'\n'$ ]] && continue
         files+=("$REPLY")
-    done < <("$ssh_string" -c "$ciphers" "$connect_to" find "$base_path" -type f 2>/dev/null | LC_ALL=C sort -f)
+    done < <("$ssh_string" -c "$ciphers" "$connect_to" find "$base_path" -type f ! -path '*dev/*' ! -path '*proc/*' 2>/dev/null | LC_ALL=C sort -f) # ! -path '*.git*'
     time_end=$(date '+%s')
 
     # Report
@@ -60,8 +60,7 @@ PrintChecksumsFiles()
     # List each element of each array in a similar format to {md,sha}*sum
     for i in "${!files[@]}"
     do
-        printf '%s  %s\n' "${checksums[i]}" "${files[i]}"
-        ##printf '%s  %s\n' "${checksums[i]/#$base_path}" "${files[i]/#$base_path}"
+        printf '%s  %s\n' "${checksums[i]}" "${files[i]}" # "${files[i]/#$base_path}"
     done
 
 }
@@ -72,8 +71,7 @@ PrintFiles()
     # List each element of each array in a similar format to {md,sha}*sum
     for i in "${!files[@]}"
     do
-        ##printf '%s\n' "${files[i]/#$base_path}"
-        printf '%s\n' "${files[i]}"
+        printf '%s\n' "${files[i]}" # "${files[i]/#$base_path}"
     done
 
 }
@@ -91,7 +89,7 @@ QueryHostCiphers()
 }
 
 ##QueryHostCiphers
-##FindandChecksums
+##FindFilesandChecksums
 ##ListAllFiles
 
 FindFiles
