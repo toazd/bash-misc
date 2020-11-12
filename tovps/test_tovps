@@ -65,11 +65,11 @@ FindFiles()
     do
         [[ $REPLY =~ ^$'\n'$ ]] && continue
         files+=("${REPLY//'//'/'/'}")
-        printf '%s\n' "${REPLY//'//'/'/'}" >> "findfiles_log"
+        ##printf '%s\n' "${REPLY//'//'/'/'}" >> "findfiles_log"
     done < <("$ssh_string" -c "$ciphers" "$connect_to" find "$base_path/" -type f ! -name 'globstar_log' ! -name 'findfiles_log' ! -path '*dev/*' ! -path '*proc/*' 2>/dev/null) # ! -path '*.git*'
     time_end=$(date '+%s')
 
-    sort "findfiles_log" -o "findfiles_log"
+    ##sort "findfiles_log" -o "findfiles_log"
 
     # Report
     printf '%s\n' "Found ${#files[@]} files in $(( time_end - time_start )) seconds"
@@ -85,7 +85,7 @@ FindFilesGlobstar() {
     while IFS= read -r || [[ -n $REPLY ]]
     do
         files+=("${REPLY//'//'/'/'}")
-        printf '%s\n' "${REPLY//'//'/'/'}" >> "globstar_log"
+        ##printf '%s\n' "${REPLY//'//'/'/'}" >> "globstar_log"
     done < <("$ssh_string" -c "$ciphers" "$connect_to" bash -s <<EOF
 #!/usr/bin/env bash
 shopt -s globstar dotglob nullglob
@@ -100,7 +100,7 @@ EOF
 )
     time_end=$(date '+%s')
 
-    sort "globstar_log" -o "globstar_log"
+    ##sort "globstar_log" -o "globstar_log"
 
     # Report
     printf '%s\n' "Found ${#files[@]} files using shopt globstar in $(( time_end - time_start )) seconds"
