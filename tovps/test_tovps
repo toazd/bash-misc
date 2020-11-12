@@ -7,7 +7,7 @@ declare ssh_string='ssh' \
         checksum=sha512sum \
         base_path=${1:-'/home/toazd/github/personal/'} \
         time_start=0 \
-        time_end=0 \\
+        time_end=0 \
         i=0
 
 FindFiles() {
