@@ -45,7 +45,7 @@ FindSortFiles()
     while IFS= read -r || [[ -n $REPLY ]]
     do
         [[ $REPLY =~ ^$'\n'$ ]] && continue
-        files+=("$REPLY")
+        files+=("${REPLY//'//'/'/'}")
     done < <("$ssh_string" -c "$ciphers" "$connect_to" find "$base_path" -type f ! -path '*dev/*' ! -path '*proc/*' 2>/dev/null | LC_ALL=C sort -f) # ! -path '*.git*'
     time_end=$(date '+%s')
 
@@ -64,12 +64,46 @@ FindFiles()
     while IFS= read -r || [[ -n $REPLY ]]
     do
         [[ $REPLY =~ ^$'\n'$ ]] && continue
-        files+=("$REPLY")
-    done < <("$ssh_string" -c "$ciphers" "$connect_to" find "$base_path" -type f ! -path '*dev/*' ! -path '*proc/*' 2>/dev/null) # ! -path '*.git*'
+        files+=("${REPLY//'//'/'/'}")
+        printf '%s\n' "${REPLY//'//'/'/'}" >> "findfiles_log"
+    done < <("$ssh_string" -c "$ciphers" "$connect_to" find "$base_path/" -type f ! -name 'globstar_log' ! -name 'findfiles_log' ! -path '*dev/*' ! -path '*proc/*' 2>/dev/null) # ! -path '*.git*'
     time_end=$(date '+%s')
+
+    sort "findfiles_log" -o "findfiles_log"
 
     # Report
     printf '%s\n' "Found ${#files[@]} files in $(( time_end - time_start )) seconds"
+
+}
+
+FindFilesGlobstar() {
+
+    files=()
+
+    # Parse the output of find via ssh, adding each column element to its respective array
+    time_start=$(date '+%s')
+    while IFS= read -r || [[ -n $REPLY ]]
+    do
+        files+=("${REPLY//'//'/'/'}")
+        printf '%s\n' "${REPLY//'//'/'/'}" >> "globstar_log"
+    done < <("$ssh_string" -c "$ciphers" "$connect_to" bash -s <<EOF
+#!/usr/bin/env bash
+shopt -s globstar dotglob nullglob
+for i in "$base_path/"**
+do
+# ignore symbolic links and the base path being searched
+[[ -L \$i || \$i -ef "$base_path" ]] && continue
+# ignore all but files
+[[ -f \$i ]] && printf '%s\n' "\$i"
+done
+EOF
+)
+    time_end=$(date '+%s')
+
+    sort "globstar_log" -o "globstar_log"
+
+    # Report
+    printf '%s\n' "Found ${#files[@]} files using shopt globstar in $(( time_end - time_start )) seconds"
 
 }
 
@@ -79,7 +113,7 @@ PrintChecksumsFiles()
     # List each element of each array in a similar format to {md,sha}*sum
     for i in "${!files[@]}"
     do
-        printf '%s  %s\n' "${checksums[i]}" "${files[i]}" # "${files[i]/#$base_path}"
+        printf '%s  %s\n' "${checksums[i]}" "${files[i]}" # "${checksums[i]/#$base_path}" "${files[i]/#$base_path}"
     done
 
 }
@@ -112,5 +146,11 @@ QueryHostCiphers()
 ##ListAllFiles
 
 ##FindSortFiles
+##FindFiles
+##FindSortFiles
+##PrintFiles
+
+FindFilesGlobstar
+##PrintFiles
 FindFiles
 ##PrintFiles
