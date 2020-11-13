@@ -4,32 +4,31 @@
 # shellcheck disable=SC2155
 GenerateRandomAlphaNumericString() {
 
-    local sLIST="$(printf "%s" {a..z}{0..9}{A..Z})"
-    local iLEN=${1:-10}
-    local sRESULT=""
-    local iC=1
+    local char_list="abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" \
+          char \
+          result=''
+
+    local -i length=${1:-10}
 
     # If the length requested is outside sane upper and lower bounds, reset it
-    [[ $iLEN -lt 1 ]] && iLEN=1
-    [[ $iLEN -gt 32767 ]] && iLEN=32767
+    (( length < 1 )) && length=1
+    (( length > 32767 )) && length=32767
 
-    # Loop iLEN times
-    for (( iC; iC<=iLEN; iC++ )) do
+    # Loop length times
+    while [[ ${#result} -lt $length ]];
+    do
+        # Randomly choose one offset of length one from char_list
+        char=${char_list:$((RANDOM%62)):1}
 
-        # Randomly choose one offset of length one from sLIST
-        sCHAR="${sLIST:$RANDOM%${#sLIST}:1}"
-
-        # Randomly invert the case (ints are ignored)
-        (( RANDOM % 2 )) && sCHAR=${sCHAR~}
-
-        # Concatenate sCHAR onto sRESULT
-        sRESULT="${sRESULT}${sCHAR}"
+        # Concatenate result and char
+        result=${result}${char}
 
     done
 
-    # "Return" the resulting string
-    printf "%s" "$sRESULT"
+    # "Return" the resulting string,
+    # meant to be captured using command substitution
+    # eg. sSTRING_OF_LENGTH_TEN=$(GenerateRandomAlphaNumericString 10)
+    printf '%s' "$result"
 
     return 0
-
 }
