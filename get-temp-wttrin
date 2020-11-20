@@ -38,22 +38,24 @@ esac
 
 while IFS= read -r curl_response || [[ -n $curl_response ]]
 do
+    curl_response=${curl_response//[[:space:]]}
     curr_weath=${curl_response%'|'*}
+    curr_weath=${curr_weath//[[:space:]]}
     unit=${curl_response#*'°'}
     curr_temp=${curl_response%'°'*}
     curr_temp=${curr_temp#*[-+]}
 
     if [[ -n $curr_temp ]]
     then
-        if (( curr_temp < temp_low ))
+        if [ "$curr_temp" -lt "$temp_low" ]
         then
-            printf '%s' "$curr_weath ${curr_temp}${degrees}${unit}"
-        elif (( curr_temp >= temp_low && curr_temp <= temp_high ))
+            printf '%s %s' "$curr_weath" "${curr_temp}${degrees}${unit}"
+        elif [ "$curr_temp" -ge "$temp_low" ] && [ "$curr_temp" -le "$temp_high" ]
         then
-            printf '%s' "$curr_weath ${curr_temp}${degrees}${unit}"
-        elif (( curr_temp > temp_high ))
+            printf '%s %s' "$curr_weath" "${curr_temp}${degrees}${unit}"
+        elif [ "$curr_temp" -gt "$temp_high" ]
         then
-            printf '%s' "$curr_weath ${curr_temp}${degrees}${unit}"
+            printf '%s %s' "$curr_weath" "${curr_temp}${degrees}${unit}"
         fi
     else
         printf '%s' "?"
