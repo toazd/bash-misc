@@ -32,7 +32,7 @@ midtempicon=''
 hitempicon=''
 
 case $req_unit in
-    (c*|'') req_unit='mM' ;;
+    (c*) req_unit='mM' ;;
     (f*) req_unit='u' ;;
     (*) req_unit='mM' ;;
 esac
