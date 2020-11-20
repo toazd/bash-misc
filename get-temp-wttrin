@@ -44,7 +44,7 @@ do
     unit=${curl_response#*'°'}
     curr_temp=${curl_response%'°'*}
     case $curr_temp in
-        (*'-'*) sign='-' ;;
+        (*-*) sign='-' ;;
         (*) sign='' ;;
     esac
     curr_temp=${curr_temp#*[-+]}
@@ -53,13 +53,13 @@ do
     then
         if [ "$curr_temp" -lt "$temp_low" ]
         then
-            printf '%s %+5s' "$curr_weath" "${sign}${curr_temp}${degrees}${unit}"
+            printf '%s %+6s' "$curr_weath" "${sign}${curr_temp}${degrees}${unit}"
         elif [ "$curr_temp" -ge "$temp_low" ] && [ "$curr_temp" -le "$temp_high" ]
         then
-            printf '%s %+5s' "$curr_weath" "${sign}${curr_temp}${degrees}${unit}"
+            printf '%s %+6s' "$curr_weath" "${sign}${curr_temp}${degrees}${unit}"
         elif [ "$curr_temp" -gt "$temp_high" ]
         then
-            printf '%s %+5s' "$curr_weath" "${sign}${curr_temp}${degrees}${unit}"
+            printf '%s %+6s' "$curr_weath" "${sign}${curr_temp}${degrees}${unit}"
         fi
     else
         printf '%s' "?"
