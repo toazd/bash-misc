@@ -46,7 +46,7 @@ do
 
     # Record if there is a negative "-" sign
     case $curr_temp in
-        (*-*) sign='-' ;;
+        (*'-'*) sign='-' ;;
         (*) sign='' ;;
     esac
     # Remove a minus "-" or a plus "+" sign and also remove anything to the left of it
