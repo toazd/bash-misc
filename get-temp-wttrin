@@ -2,20 +2,21 @@
 # https://www.shellcheck.net/wiki/SC2034
 # shellcheck disable=SC2034
 #
-# USAGE: ./get-temp-wttrin <location> <optional unit: C|F>
+# USAGE:
+#   ./get-temp-wttrin <location> <optional unit: [cC]|[fF]>
 #
 # NOTES:
-# https://wttr.in/:help
-# https://github.com/chubin/wttr.in/blob/master/README.md
+#   https://wttr.in/:help
+#   https://github.com/chubin/wttr.in/blob/master/README.md
 #
-# Supported location types:
-#    /paris                  # city name
-#    /~Eiffel+tower          # any location (+ for spaces)
-#    /Москва                 # Unicode name of any location in any language
-#    /muc                    # airport code (3 letters)
-#    /@stackoverflow.com     # domain name
-#    /94107                  # area codes
-#    /-78.46,106.79          # GPS coordinates
+#   Supported location types:
+#     /paris                  # city name
+#     /~Eiffel+tower          # any location (+ for spaces)
+#     /Москва                 # Unicode name of any location in any language
+#     /muc                    # airport code (3 letters)
+#     /@stackoverflow.com     # domain name
+#     /94107                  # area codes
+#     /-78.46,106.79          # GPS coordinates
 
 location=${1:-'Paris'}
 req_unit=${2:-'mM'} # Default: Celcius
@@ -45,7 +46,7 @@ do
     curr_temp=${curl_response%'°'*}
     curr_temp=${curr_temp#*[-+]}
 
-    if [[ -n $curr_temp ]]
+    if [ -n "$curr_temp" ]
     then
         if [ "$curr_temp" -lt "$temp_low" ]
         then
