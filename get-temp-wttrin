@@ -18,7 +18,7 @@
 #    /-78.46,106.79          # GPS coordinates
 
 location=${1:-'Paris'}
-unit=${2:-'mM'} # Default: Celcius
+req_unit=${2:-'mM'} # Default: Celcius
 degrees='°'
 nocloud='盛'
 cloud=''
@@ -31,9 +31,9 @@ lotempicon=''
 midtempicon=''
 hitempicon=''
 
-case ${unit,,} in
-    (c*|m*|'') unit='mM' ;;
-    (f*) unit='u' ;;
+case ${$req_unit,,} in
+    (c*|m*|'') req_unit='mM' ;;
+    (f*) req_unit='u' ;;
 esac
 
 while IFS= read -r || [[ -n $REPLY ]]
@@ -61,5 +61,5 @@ do
 done <<EOC
 $( # https://www.shellcheck.net/wiki/SC2140
 # shellcheck disable=SC2140
-curl -sL https://wttr.in/"$location"?0"$unit"qQT\&lang=en\&format="%c|%t")
+curl -sL https://wttr.in/"$location"?0"$req_unit"qQT\&lang=en\&format="%c|%t")
 EOC
