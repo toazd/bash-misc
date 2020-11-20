@@ -31,7 +31,7 @@ lotempicon=''
 midtempicon=''
 hitempicon=''
 
-case ${$req_unit,,} in
+case ${req_unit,,} in
     (c*|m*|'') req_unit='mM' ;;
     (f*) req_unit='u' ;;
 esac
