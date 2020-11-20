@@ -1,5 +1,5 @@
-#!/usr/bin/env bash
-#
+#!/bin/sh
+# shellcheck disable=SC2034
 # USAGE:
 #   ./get-temp-wttrin <location> <optional unit: [cC]|[fF]>
 #
@@ -31,7 +31,7 @@ lotempicon=''
 midtempicon=''
 hitempicon=''
 
-case ${req_unit,,} in
+case $req_unit in
     (c*|'') req_unit='mM' ;;
     (f*) req_unit='u' ;;
     (*) req_unit='mM' ;;
@@ -39,11 +39,14 @@ esac
 
 while IFS= read -r curl_response || [ -n "$curl_response" ]
 do
-    curl_response=${curl_response//[[:space:]]}
+    curl_response=$(echo "$curl_response" | sed -e 's|[[:space:]]||g')
     curr_weath=${curl_response%'|'*}
     unit=${curl_response#*'°'}
     curr_temp=${curl_response%'°'*}
-    [[ $curr_temp = *'-'* ]] && sign='-'
+    case $curr_temp in
+        (*'-'*) sign='-' ;;
+        (*) sign='' ;;
+    esac
     curr_temp=${curr_temp#*[-+]}
 
     if [ -n "$curr_temp" ]
