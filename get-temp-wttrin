@@ -37,7 +37,7 @@ case ${req_unit,,} in
     (*) req_unit='mM' ;;
 esac
 
-while IFS= read -r curl_response || [[ -n $curl_response ]]
+while IFS= read -r curl_response || [ -n "$curl_response" ]
 do
     curl_response=${curl_response//[[:space:]]}
     curr_weath=${curl_response%'|'*}
