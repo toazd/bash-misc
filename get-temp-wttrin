@@ -49,17 +49,27 @@ do
     esac
     curr_temp=${curr_temp#*[-+]}
 
+    echo "curr_weath: ${#curr_weath}"
+
+
     if [ -n "$curr_temp" ]
     then
+        full_temp=${sign}${curr_temp}${degrees}${unit}
+        echo "full_temp before: ${#full_temp}"
+        while [ "${#full_temp}" -lt 8 ]
+        do
+            full_temp=" $full_temp"
+        done
+echo "full_temp after: ${#full_temp}"
         if [ "$curr_temp" -lt "$temp_low" ]
         then
-            printf '%s %+6s' "$curr_weath" "${sign}${curr_temp}${degrees}${unit}"
+            printf '%s' "$curr_weath $full_temp"
         elif [ "$curr_temp" -ge "$temp_low" ] && [ "$curr_temp" -le "$temp_high" ]
         then
-            printf '%s %+6s' "$curr_weath" "${sign}${curr_temp}${degrees}${unit}"
+            printf '%s' "$curr_weath $full_temp"
         elif [ "$curr_temp" -gt "$temp_high" ]
         then
-            printf '%s %+6s' "$curr_weath" "${sign}${curr_temp}${degrees}${unit}"
+            printf '%s' "$curr_weath $full_temp"
         fi
     else
         printf '%s' "?"
