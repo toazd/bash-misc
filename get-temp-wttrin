@@ -50,13 +50,13 @@ do
     then
         if [ "$curr_temp" -lt "$temp_low" ]
         then
-            printf '%+8s' "$curr_weath ${sign}${curr_temp}${degrees}${unit}"
+            printf '%s %+5s' "$curr_weath" "${sign}${curr_temp}${degrees}${unit}"
         elif [ "$curr_temp" -ge "$temp_low" ] && [ "$curr_temp" -le "$temp_high" ]
         then
-            printf '%+8s' "$curr_weath ${sign}${curr_temp}${degrees}${unit}"
+            printf '%s %+5s' "$curr_weath" "${sign}${curr_temp}${degrees}${unit}"
         elif [ "$curr_temp" -gt "$temp_high" ]
         then
-            printf '%+8s' "$curr_weath ${sign}${curr_temp}${degrees}${unit}"
+            printf '%s %+5s' "$curr_weath" "${sign}${curr_temp}${degrees}${unit}"
         fi
     else
         printf '%s' "?"
