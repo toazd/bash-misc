@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+#
+# NOTES:
+# https://wttr.in/:help
+# https://github.com/chubin/wttr.in/blob/master/README.md
+#
+# Supported location types:
+#
+#    /paris                  # city name
+#    /~Eiffel+tower          # any location (+ for spaces)
+#    /Москва                 # Unicode name of any location in any language
+#    /muc                    # airport code (3 letters)
+#    /@stackoverflow.com     # domain name
+#    /94107                  # area codes
+#    /-78.46,106.79          # GPS coordinates
+#
+
+location=${1:-'Paris'}
+curr_temp=$(curl -sL https://wttr.in/"$location"?0mMqQT\&lang=en\&format="+%t") # example return value (sans quotes): " -1°C"
+curr_temp=${curr_temp//[[:space:]]} # Remove spaces and tabs
+##unit=${curr_temp#*'°'} # Remove the degree symbol and anything to the left of it
+curr_temp=${curr_temp%'°'*} # Remove the degree symbol and anything to the right of it
+
+nocloud='盛'
+cloud=''
+rain=''
+snow=''
+storm=''
+temp_low=10
+temp_high=27
+lotempicon=''
+midtempicon=''
+hitempicon=''
+
+# If newlines are extraneous in the output
+# change '%s\n' to '%s' for the next four
+# occurances of printf
+if [[ -n $curr_temp ]]
+then
+    if (( curr_temp <= temp_low ))
+    then
+        printf '%s\n' "$lotempicon ${curr_temp/'+'}"
+    elif (( curr_temp >= temp_low && curr_temp <= temp_high ))
+    then
+        printf '%s\n' "$midtempicon ${curr_temp/'+'}"
+    elif (( curr_temp > temp_high ))
+    then
+        printf '%s\n' "$hitempicon ${curr_temp/'+'}"
+    fi
+else
+    printf '%s\n' "?"
+fi
