@@ -36,11 +36,11 @@ case ${req_unit,,} in
     (f*) req_unit='u' ;;
 esac
 
-while IFS= read -r || [[ -n $REPLY ]]
+while IFS= read -r curl_response || [[ -n $curl_response ]]
 do
-    curr_weath=${REPLY%'|'*}
-    unit=${REPLY#*'°'}
-    curr_temp=${REPLY%'°'*}
+    curr_weath=${curl_response%'|'*}
+    unit=${curl_response#*'°'}
+    curr_temp=${curl_response%'°'*}
     curr_temp=${curr_temp#*[-+]}
 
     if [[ -n $curr_temp ]]
