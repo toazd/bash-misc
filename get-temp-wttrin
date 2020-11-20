@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# https://www.shellcheck.net/wiki/SC2034
-# shellcheck disable=SC2034
 #
 # USAGE:
 #   ./get-temp-wttrin <location> <optional unit: [cC]|[fF]>
@@ -21,6 +19,7 @@
 location=${1:-'Paris'}
 req_unit=${2:-'mM'} # Default: Celcius
 degrees='°'
+sign=''
 nocloud='盛'
 cloud=''
 rain=''
@@ -44,25 +43,24 @@ do
     curr_weath=${curl_response%'|'*}
     unit=${curl_response#*'°'}
     curr_temp=${curl_response%'°'*}
+    [[ $curr_temp = *'-'* ]] && sign='-'
     curr_temp=${curr_temp#*[-+]}
 
     if [ -n "$curr_temp" ]
     then
         if [ "$curr_temp" -lt "$temp_low" ]
         then
-            printf '%s %s' "$curr_weath" "${curr_temp}${degrees}${unit}"
+            printf '%+8s' "$curr_weath ${sign}${curr_temp}${degrees}${unit}"
         elif [ "$curr_temp" -ge "$temp_low" ] && [ "$curr_temp" -le "$temp_high" ]
         then
-            printf '%s %s' "$curr_weath" "${curr_temp}${degrees}${unit}"
+            printf '%+8s' "$curr_weath ${sign}${curr_temp}${degrees}${unit}"
         elif [ "$curr_temp" -gt "$temp_high" ]
         then
-            printf '%s %s' "$curr_weath" "${curr_temp}${degrees}${unit}"
+            printf '%+8s' "$curr_weath ${sign}${curr_temp}${degrees}${unit}"
         fi
     else
         printf '%s' "?"
     fi
 done <<EOC
-$( # https://www.shellcheck.net/wiki/SC2140
-# shellcheck disable=SC2140
-curl -sL https://wttr.in/"$location"?0"$req_unit"qQT\&lang=en\&format="%c|%t")
+$(curl -sL https://wttr.in/"${location}?${req_unit}"0qQTF\&lang=en\&format="%c|%t")
 EOC
