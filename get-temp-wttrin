@@ -57,9 +57,7 @@ do
         printf '%s' "?"
     fi
 done <<EOC
-$(
-# https://www.shellcheck.net/wiki/SC2140
+$( # https://www.shellcheck.net/wiki/SC2140
 # shellcheck disable=SC2140
-curl -sL https://wttr.in/"$location"?0"$unit"qQT\&lang=en\&format="+%t"
-)
+curl -sL https://wttr.in/"$location"?0"$unit"qQT\&lang=en\&format="+%t")
 EOC
