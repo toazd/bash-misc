@@ -54,7 +54,7 @@ do
 
     if [ -n "$curr_temp" ]
     then
-        printf '%s %-5s' "$curr_weath" "${sign}${curr_temp}${degrees}${unit}"
+        printf '%s %5s' "$curr_weath" "${sign}${curr_temp}${degrees}${unit}"
     else
         printf '%s' "?"
     fi
