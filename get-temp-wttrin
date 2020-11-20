@@ -40,7 +40,6 @@ while IFS= read -r curl_response || [[ -n $curl_response ]]
 do
     curl_response=${curl_response//[[:space:]]}
     curr_weath=${curl_response%'|'*}
-    curr_weath=${curr_weath//[[:space:]]}
     unit=${curl_response#*'°'}
     curr_temp=${curl_response%'°'*}
     curr_temp=${curr_temp#*[-+]}
