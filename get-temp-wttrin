@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
+# https://www.shellcheck.net/wiki/SC2034
+# shellcheck disable=SC2034
 #
-# USAGE: ./get-temp-wttrin <location>
+# USAGE: ./get-temp-wttrin <location> <optional unit: C|F>
 #
 # NOTES:
 # https://wttr.in/:help
 # https://github.com/chubin/wttr.in/blob/master/README.md
 #
 # Supported location types:
-#
 #    /paris                  # city name
 #    /~Eiffel+tower          # any location (+ for spaces)
 #    /Москва                 # Unicode name of any location in any language
@@ -15,9 +16,9 @@
 #    /@stackoverflow.com     # domain name
 #    /94107                  # area codes
 #    /-78.46,106.79          # GPS coordinates
-#
 
 location=${1:-'Paris'}
+unit=${2:-'mM'} # Default: Celcius
 nocloud='盛'
 cloud=''
 rain=''
@@ -28,6 +29,11 @@ temp_high=27
 lotempicon=''
 midtempicon=''
 hitempicon=''
+
+case ${unit,,} in
+    (c*|m*|'') unit='mM' ;;
+    (f*) unit='u' ;;
+esac
 
 while IFS= read -r || [[ -n $REPLY ]]
 do
@@ -50,4 +56,10 @@ do
     else
         printf '%s' "?"
     fi
-done < <(curl -sL https://wttr.in/"$location"?0mMqQT\&lang=en\&format="+%t")
+done <<EOC
+$(
+# https://www.shellcheck.net/wiki/SC2140
+# shellcheck disable=SC2140
+curl -sL https://wttr.in/"$location"?0"$unit"qQT\&lang=en\&format="+%t"
+)
+EOC
