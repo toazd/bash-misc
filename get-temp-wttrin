@@ -52,7 +52,7 @@ do
     if [ -n "$curr_temp" ]
     then
         full_temp=${sign}${curr_temp}${degrees}${unit}
-        while [ "${#full_temp}" -lt 8 ]
+        while [ "${#full_temp}" -lt 7 ]
         do
             full_temp=" $full_temp"
         done
