@@ -39,7 +39,7 @@ esac
 
 while IFS= read -r curl_response || [ -n "$curl_response" ]
 do
-    curl_response=$(echo "$curl_response" | sed -e 's|[[:space:]]||g')
+    curl_response=$(echo "$curl_response" | sed -e 's| ||g')
     curr_weath=${curl_response%'|'*}
     unit=${curl_response#*'°'}
     curr_temp=${curl_response%'°'*}
