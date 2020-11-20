@@ -19,6 +19,7 @@
 
 location=${1:-'Paris'}
 unit=${2:-'mM'} # Default: Celcius
+degrees='°'
 nocloud='盛'
 cloud=''
 rain=''
@@ -37,21 +38,22 @@ esac
 
 while IFS= read -r || [[ -n $REPLY ]]
 do
-    REPLY=${REPLY//[[:space:]]}
-    ##unit=${curr_temp#*'°'}
+    curr_weath=${REPLY%'|'*}
+    unit=${REPLY#*'°'}
     curr_temp=${REPLY%'°'*}
+    curr_temp=${curr_temp#*[-+]}
 
     if [[ -n $curr_temp ]]
     then
         if (( curr_temp < temp_low ))
         then
-            printf '%s' "$lotempicon ${REPLY/'+'}"
+            printf '%s' "$curr_weath ${curr_temp}${degrees}${unit}"
         elif (( curr_temp >= temp_low && curr_temp <= temp_high ))
         then
-            printf '%s' "$midtempicon ${REPLY/'+'}"
+            printf '%s' "$curr_weath ${curr_temp}${degrees}${unit}"
         elif (( curr_temp > temp_high ))
         then
-            printf '%s' "$hitempicon ${REPLY/'+'}"
+            printf '%s' "$curr_weath ${curr_temp}${degrees}${unit}"
         fi
     else
         printf '%s' "?"
@@ -59,5 +61,5 @@ do
 done <<EOC
 $( # https://www.shellcheck.net/wiki/SC2140
 # shellcheck disable=SC2140
-curl -sL https://wttr.in/"$location"?0"$unit"qQT\&lang=en\&format="+%t")
+curl -sL https://wttr.in/"$location"?0"$unit"qQT\&lang=en\&format="%c|%t")
 EOC
