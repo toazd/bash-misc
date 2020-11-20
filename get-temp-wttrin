@@ -43,6 +43,7 @@ do
     curr_weath=${curl_response%'|'*}
     unit=${curl_response#*'°'}
     curr_temp=${curl_response%'°'*}
+
     case $curr_temp in
         (*-*) sign='-' ;;
         (*) sign='' ;;
@@ -52,10 +53,12 @@ do
     if [ -n "$curr_temp" ]
     then
         full_temp=${sign}${curr_temp}${degrees}${unit}
+
         while [ "${#full_temp}" -lt 7 ]
         do
             full_temp=" $full_temp"
         done
+
         if [ "$curr_temp" -lt "$temp_low" ]
         then
             printf '%s' "$curr_weath $full_temp"
