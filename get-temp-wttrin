@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 #
+# USAGE: ./get-temp-wttrin <location>
+#
 # NOTES:
 # https://wttr.in/:help
 # https://github.com/chubin/wttr.in/blob/master/README.md
@@ -32,12 +34,9 @@ lotempicon=''
 midtempicon=''
 hitempicon=''
 
-# If newlines are extraneous in the output
-# change '%s\n' to '%s' for the next four
-# occurances of printf
 if [[ -n $curr_temp ]]
 then
-    if (( curr_temp <= temp_low ))
+    if (( curr_temp < temp_low ))
     then
         printf '%s\n' "$lotempicon ${curr_temp/'+'}"
     elif (( curr_temp >= temp_low && curr_temp <= temp_high ))
