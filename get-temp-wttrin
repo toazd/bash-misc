@@ -18,11 +18,6 @@
 #
 
 location=${1:-'Paris'}
-curr_temp=$(curl -sL https://wttr.in/"$location"?0mMqQT\&lang=en\&format="+%t") # example return value (sans quotes): " -1°C"
-curr_temp=${curr_temp//[[:space:]]} # Remove spaces and tabs
-##unit=${curr_temp#*'°'} # Remove the degree symbol and anything to the left of it
-curr_temp=${curr_temp%'°'*} # Remove the degree symbol and anything to the right of it
-
 nocloud='盛'
 cloud=''
 rain=''
@@ -34,18 +29,25 @@ lotempicon=''
 midtempicon=''
 hitempicon=''
 
-if [[ -n $curr_temp ]]
-then
-    if (( curr_temp < temp_low ))
+while IFS= read -r || [[ -n $REPLY ]]
+do
+    REPLY=${REPLY//[[:space:]]}
+    ##unit=${curr_temp#*'°'}
+    curr_temp=${REPLY%'°'*}
+
+    if [[ -n $curr_temp ]]
     then
-        printf '%s\n' "$lotempicon ${curr_temp/'+'}"
-    elif (( curr_temp >= temp_low && curr_temp <= temp_high ))
-    then
-        printf '%s\n' "$midtempicon ${curr_temp/'+'}"
-    elif (( curr_temp > temp_high ))
-    then
-        printf '%s\n' "$hitempicon ${curr_temp/'+'}"
+        if (( curr_temp < temp_low ))
+        then
+            printf '%s' "$lotempicon ${REPLY/'+'}"
+        elif (( curr_temp >= temp_low && curr_temp <= temp_high ))
+        then
+            printf '%s' "$midtempicon ${REPLY/'+'}"
+        elif (( curr_temp > temp_high ))
+        then
+            printf '%s' "$hitempicon ${REPLY/'+'}"
+        fi
+    else
+        printf '%s' "?"
     fi
-else
-    printf '%s\n' "?"
-fi
+done < <(curl -sL https://wttr.in/"$location"?0mMqQT\&lang=en\&format="+%t")
