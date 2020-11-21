@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 #
+# PURPOSE: Parse the output of 'sensors -uA' and reformat it
+#          using no external commands.
+#
 # red='\033[0;31m'
 # green='\033[0;32m'
 # yellow='\033[0;33m'
@@ -15,41 +18,38 @@ flag_tab_delimited_output=1 # 0= use space instead of tab for separating a data 
 flag_group_seperator=0      #>0= seperate major sensor groups with a blank line
 flag_subgroup_labels=0      #>0= seperate minor sensor groups with their label
 flag_color_output=1         # 0= do not show color output
-theme=dark
+theme=dark                  # dark|light see below
 
 if ((flag_color_output))
 then
-    ####################################
-    # set custom colors here           #
-    # default colors are based on a    #
-    # white on black terminal theme    #
-    ####################################
-    case ${theme,,} in
-        (dark) # black on white terminal theme
-            title_color='\033[1;34m'
-            subgroup_title_color=$title_color
-            sensor_label_color='\033[0;36m'
-            sensor_data_color='\033[0;37m'
-            subgroup_label_color='\033[0;32m'
-        ;;
-        (light) # white on black terminal theme
-            title_color='\033[0;31m'
-            subgroup_title_color=$title_color
-            sensor_label_color='\033[0;36m'
-            sensor_data_color='\033[m'
-            subgroup_label_color='\033[0;32m'
-        ;;
-        (*)
-            # Default none
-            title_color=''
-            sensor_label_color=''
-            sensor_data_color=''
-            subgroup_title_color=''
-            subgroup_label_color=''
-            reset_color=''
-        ;;
-    esac
-    ####################################
+#####################################################
+##### set color themes below                        #
+#####################################################
+    case ${theme,,} in                              #
+        (dark) # black on white terminal theme      #
+            title_color='\033[1;34m'                #
+            subgroup_title_color=$title_color       #
+            sensor_label_color='\033[0;36m'         #
+            sensor_data_color='\033[0;37m'          #
+            subgroup_label_color='\033[0;32m'       #
+        ;;                                          #
+        (light) # white on black terminal theme     #
+            title_color='\033[0;31m'                #
+            subgroup_title_color=$title_color       #
+            sensor_label_color='\033[0;36m'         #
+            sensor_data_color='\033[m'              #
+            subgroup_label_color='\033[0;32m'       #
+        ;;                                          #
+        (*) # Default no color output               #
+            title_color=''                          #
+            sensor_label_color=''                   #
+            sensor_data_color=''                    #
+            subgroup_title_color=''                 #
+            subgroup_label_color=''                 #
+            reset_color=''                          #
+        ;;                                          #
+    esac                                            #
+#####################################################
     reset_color='\033[0m'
 else
     title_color=''
