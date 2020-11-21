@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+#
+# red='\033[0;31m'
+# green='\033[0;32m'
+# yellow='\033[0;33m'
+# blue='\033[0;34m'
+# magenta='\033[0;35m'
+# cyan='\033[0;36m'
+# white='\033[0;37m'
+#
+# set options
+flag_fold_trailingzeros=1   # 0= do not alter sensors numeric output
+flag_tab_delimited_output=1 # 0= use space instead of tab for separating a data label from its data
+flag_group_seperator=0      #>0= seperate major sensor groups with a blank line
+flag_subgroup_labels=0      #>0= seperate minor sensor groups with their label
+flag_color_output=1         # 0= do not show color output
+if ((flag_color_output))
+then
+    ####################################
+    # set custom colors here           #
+    ####################################
+    title_color='\033[1;34m'           #
+    subgroup_title_color=$title_color  #
+    sensor_label_color='\033[0;36m'    #
+    sensor_data_color='\033[0;37m'     #
+    subgroup_label_color='\033[0;32m'  #
+    ####################################
+    reset_color='\033[0m'
+else
+    title_color=''
+    sensor_label_color=''
+    sensor_data_color=''
+    subgroup_title_color=''
+    subgroup_label_color=''
+    reset_color=''
+fi
+
+if ((flag_tab_delimited_output))
+then
+    tab=$'\t'
+else
+    tab=' '
+fi
+
+line_count=0
+while IFS=': ' read -r -- sensor_label sensor_data
+do
+    line_count+=1
+
+    if [[ -n $sensor_data && -n $sensor_label ]]
+    then
+        # Fold trailing zeros (eg. .000 => .0)
+        ((flag_fold_trailingzeros)) && {
+            while [[ $sensor_data == *'00' ]]
+            do
+                sensor_data=${sensor_data/%'00'/'0'}
+            done
+        }
+
+        # Add unit sensor_label back
+        case $sensor_label in
+            (*in?_input*) unit='V' ;;
+            (*fan?_*) unit='RPM' ;;
+            (*temp?_*) unit='°C' ;;
+            (*power?_*) unit='W' ;;
+            (*curr?_*) unit='A' ;;
+            (*) unit='' ;;
+        esac
+
+        # "sensor data" line
+        printf "${sensor_label_color}%s${reset_color}${tab}${sensor_data_color}%s${reset_color}\n" \
+               "${sensor_label}" \
+               "${sensor_data}${unit}"
+        unit=''
+    else
+        # detect device titles (after the first) by the leading newline
+        [[ -z $sensor_label ]] && { flag_title=1; continue; }
+
+        if ((flag_title || line_count == 1))
+        then
+            flag_title=0
+            ((line_count == 1)) && {
+                # Group title
+                printf "${title_color}%s${reset_color}\n" "$sensor_label"
+                continue
+            }
+
+            # Recreate the newline seperators in the output like sensors
+            if ((flag_group_seperator))
+            then
+                printf "\n${subgroup_title_color}%s${reset_color}\n" "$sensor_label"
+            else
+                printf "${subgroup_title_color}%s${reset_color}\n" "$sensor_label"
+            fi
+        else
+            # Subgroup labels
+            ((flag_subgroup_labels)) && {
+                printf "${subgroup_label_color}%s:${reset_color}\n" "$sensor_label"
+            }
+        fi
+    fi
+done < <(sensors -uA 2>/dev/null)
