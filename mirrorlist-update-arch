@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+####
 (( $(id -u) != 0 )) && echo "Root required" && exit 1
 
 CleanUp() {
@@ -9,7 +9,12 @@ CleanUp() {
 trap 'CleanUp' EXIT
 
 ! command -v curl 2>/dev/null 1>&2 && echo "curl required" && exit 1
+####
 
+country=US
+ip_version=4 # a second ip_version option must be added to support ipv6 (eg. &ip_version=6)
+protocol=https # a second protocol option must be added to support http (eg. &protocol=http)
+use_mirror_status=on
 tmp_file=/tmp/"$(basename "$0")"-"$(date '+%s')".tmp
 flag_header_found=0
 count_lines=0
@@ -28,8 +33,9 @@ do
         REPLY=${REPLY/#'#Server'/Server}
         echo "$REPLY"
     fi
-done < <(curl -sL 'https://www.archlinux.org/mirrorlist/?country=US&protocol=https&ip_version=4&use_mirror_status=on' 2>/dev/null) > "$tmp_file"
+done < <(curl -sL "https://www.archlinux.org/mirrorlist/?country=${country}&protocol=${protocol}&ip_version=${ip_version}&use_mirror_status=$use_mirror_status" 2>/dev/null) > "$tmp_file"
 
+# If at least one host is found and all three "headers" were found (validate the response)
 if (( count_lines > 4 && flag_header_found == 3 ))
 then
     echo "$count_lines lines processed from curl"
