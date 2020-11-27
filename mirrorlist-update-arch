@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-(( $(id -u) != 0 )) && echo "Root required" && exit 1
+##(( $(id -u) != 0 )) && echo "Root required" && exit 1
 
 CleanUp() {
     rm -f "$tmp_file" 2>/dev/null 1>&2
@@ -17,20 +17,48 @@ use_mirror_status=on
 tmp_file=/tmp/"$(basename "$0")"-"$(date '+%s')".tmp
 flag_header_found=0
 count_lines=0
+response=()
 
 while IFS= read -r
 do
     count_lines=$(( count_lines + 1 ))
     
+    # "Header" used to validate input lines
     [[ $REPLY == '## Arch Linux repository mirrorlist'* || $REPLY == '## Filtered by'* || $REPLY == '## Generated on'* ]] && {
         flag_header_found=$((flag_header_found+1))
-        echo "$REPLY"
+        if [[ $REPLY == '## Generated on'* ]]
+        then
+            printf '%s %s %s\n' "$REPLY" "at $(date '+%T')" "by $(basename "$0")"
+        else
+            echo "$REPLY"
+        fi
     }
     
+    # Ignore these servers
+    if [[ $REPLY == *'zxcvfdsa.com'* ]]
+    then
+        continue
+    fi
+
     [[ $REPLY == '#Server'* && $flag_header_found -ge 1 ]] && {
+        
         # Un-comment the host line
         REPLY=${REPLY/#'#Server'/Server}
-        echo "$REPLY"
+        
+        # Get the hostname to query
+        host_name=${REPLY#*://}
+        host_name=${host_name%%/*}
+
+        IFS=' ' response=( $(curl -s -m 1 -w "%{time_total} %{http_code}" "$host_name" -o /dev/null 2>/dev/null) )
+        
+        if (( response[1] >= 400 || ! response[1] ))
+        then
+            echo "# $host_name returned ${response[1]}"
+            continue
+        elif (( response[1] <= 400 ))
+        then
+            echo "$REPLY # ${response[0]}s"
+        fi
     }
 done < <(curl -sL "https://www.archlinux.org/mirrorlist/?country=${country}&protocol=${protocol}&ip_version=${ip_version}&use_mirror_status=$use_mirror_status" 2>/dev/null) > "$tmp_file"
 
@@ -38,9 +66,9 @@ done < <(curl -sL "https://www.archlinux.org/mirrorlist/?country=${country}&prot
 if (( count_lines >= 4 && flag_header_found == 3 ))
 then
     echo "$count_lines lines processed from curl"
-    [[ -f /etc/pacman.d/mirrorlist ]] && mv -fv "/etc/pacman.d/mirrorlist" "/etc/pacman.d/mirrorlist~"
+    [[ -f /etc/pacman.d/mirrorlist ]] && sudo mv -v "/etc/pacman.d/mirrorlist" "/etc/pacman.d/mirrorlist~"
 
-    if mv -fv "$tmp_file" "/etc/pacman.d/mirrorlist"
+    if sudo mv -v "$tmp_file" "/etc/pacman.d/mirrorlist"
     then
         echo "Successfully updated mirrorlist"
     else
@@ -49,20 +77,4 @@ then
 else
     echo "Not enough valid responses. No changes were made."
 fi
-
-# Rank based on response time
-#        [[ $REPLY == *'https'* ]] && {
-#            # Get only the host name
-#            host=${REPLY#*https://}
-#            host=${host%%/*}
-#            IFS=' ' read -ra response "$(curl -silent --max-response 2 -w "%{time_total} "$host" -o /dev/null)"
-#            if (( response[1] >= 400 || ! response[1] ))
-#            then
-#                #echo "unreachable"
-#                continue
-#            elif (( response[1] <= 400 ))
-#            then
-#                echo "$REPLY # ${response[0]}"
-#            fi
-#        }
 
