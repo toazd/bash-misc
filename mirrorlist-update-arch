@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
-####
+
 (( $(id -u) != 0 )) && echo "Root required" && exit 1
 
 CleanUp() {
-    rm "$tmp_file" 2>/dev/null 1>&2
+    rm -f "$tmp_file" 2>/dev/null 1>&2
 }
 
 trap 'CleanUp' EXIT
 
 ! command -v curl 2>/dev/null 1>&2 && echo "curl required" && exit 1
-####
 
 country=US
 ip_version=4 # a second ip_version option must be added to support ipv6 (eg. &ip_version=6)
@@ -21,30 +20,27 @@ count_lines=0
 
 while IFS= read -r
 do
-    count_lines=$((count_lines+1))
+    count_lines=$(( count_lines + 1 ))
     
     [[ $REPLY == '## Arch Linux repository mirrorlist'* || $REPLY == '## Filtered by'* || $REPLY == '## Generated on'* ]] && {
         flag_header_found=$((flag_header_found+1))
         echo "$REPLY"
     }
-    if ((flag_header_found)) && [[ $REPLY == '#Server = '* ]]
-    then
+    
+    [[ $REPLY == '#Server'* && $flag_header_found -ge 1 ]] && {
         # Un-comment the host line
         REPLY=${REPLY/#'#Server'/Server}
         echo "$REPLY"
-    fi
+    }
 done < <(curl -sL "https://www.archlinux.org/mirrorlist/?country=${country}&protocol=${protocol}&ip_version=${ip_version}&use_mirror_status=$use_mirror_status" 2>/dev/null) > "$tmp_file"
 
 # If at least one host is found and all three "headers" were found (validate the response)
-if (( count_lines > 4 && flag_header_found == 3 ))
+if (( count_lines >= 4 && flag_header_found == 3 ))
 then
     echo "$count_lines lines processed from curl"
-    [[ -f /etc/pacman.d/mirrorlist ]] && {
-        echo "Backup up existing mirrorlist..."
-        mv -v "/etc/pacman.d/mirrorlist" "/etc/pacman.d/mirrorlist~"
-    }
-    
-    if mv -v "$tmp_file" "/etc/pacman.d/mirrorlist"
+    [[ -f /etc/pacman.d/mirrorlist ]] && mv -fv "/etc/pacman.d/mirrorlist" "/etc/pacman.d/mirrorlist~"
+
+    if mv -fv "$tmp_file" "/etc/pacman.d/mirrorlist"
     then
         echo "Successfully updated mirrorlist"
     else
@@ -54,13 +50,12 @@ else
     echo "Not enough valid responses. No changes were made."
 fi
 
-        # Rank based on response time
+# Rank based on response time
 #        [[ $REPLY == *'https'* ]] && {
 #            # Get only the host name
 #            host=${REPLY#*https://}
 #            host=${host%%/*}
-#            IFS=' ' read -ra response "$(curl -silent --max-response 2 -w "%{time_total} %{http_code}" "$host" -o /dev/null)"
-#            
+#            IFS=' ' read -ra response "$(curl -silent --max-response 2 -w "%{time_total} "$host" -o /dev/null)"
 #            if (( response[1] >= 400 || ! response[1] ))
 #            then
 #                #echo "unreachable"
@@ -70,5 +65,4 @@ fi
 #                echo "$REPLY # ${response[0]}"
 #            fi
 #        }
-
 
