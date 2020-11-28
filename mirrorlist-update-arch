@@ -10,15 +10,14 @@ trap 'CleanUp' EXIT
 
 ! command -v curl 2>/dev/null 1>&2 && echo "curl required" && exit 1
 
-country=US
-ip_version=4 # a second ip_version option must be added to support ipv6 (eg. &ip_version=6)
-protocol=https # a second protocol option must be added to support http (eg. &protocol=http)
-use_mirror_status=on
 tmp_file=/tmp/"$(basename "$0")"-"$(date '+%s')".tmp
 flag_header_found=0
 count_lines=0
+valid_hosts=0
+failed_hosts=0
 response=()
 
+echo "Validating each host, please wait..."
 while IFS= read -r
 do
     count_lines=$(( count_lines + 1 ))
@@ -49,25 +48,31 @@ do
         host_name=${REPLY#*://}
         host_name=${host_name%%/*}
 
-        IFS=' ' response=( $(curl -s -m 1 -w "%{time_total} %{http_code}" "$host_name" -o /dev/null 2>/dev/null) )
+        IFS=' ' response=( $(curl -s -m 2 -w "%{time_total} %{http_code}" "https://${host_name}" -o /dev/null 2>/dev/null) )
         
         if (( response[1] >= 400 || ! response[1] ))
         then
+            failed_hosts=$((failed_hosts + 1))
             echo "# $host_name returned ${response[1]}"
             continue
         elif (( response[1] <= 400 ))
         then
+            valid_hosts=$((valid_hosts + 1))
             echo "$REPLY # ${response[0]}s"
         fi
     }
-done < <(curl -sL "https://www.archlinux.org/mirrorlist/?country=${country}&protocol=${protocol}&ip_version=${ip_version}&use_mirror_status=$use_mirror_status" 2>/dev/null) > "$tmp_file"
+done < <(curl -sL "https://www.archlinux.org/mirrorlist/?country=BR&country=CA&country=DE&country=IE&country=NZ&country=GB&country=US&protocol=https&ip_version=4&use_mirror_status=on" 2>/dev/null) > "$tmp_file"
 
 # If at least one host is found and all three "headers" were found (validate the response)
 if (( count_lines >= 4 && flag_header_found == 3 ))
 then
-    echo "$count_lines lines processed from curl"
-    [[ -f /etc/pacman.d/mirrorlist ]] && sudo mv -v "/etc/pacman.d/mirrorlist" "/etc/pacman.d/mirrorlist~"
-
+    echo "$(( (count_lines - 3) - valid_hosts )) tested | $valid_hosts valid | $failed_hosts failed"
+    [[ -f /etc/pacman.d/mirrorlist ]] && {
+        echo "sudo is required to backup existing mirrorlist"
+        sudo mv -v "/etc/pacman.d/mirrorlist" "/etc/pacman.d/mirrorlist~"
+    }
+    
+    echo "sudo is required to update current mirrorlist"
     if sudo mv -v "$tmp_file" "/etc/pacman.d/mirrorlist"
     then
         echo "Successfully updated mirrorlist"
