@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-##(( $(id -u) != 0 )) && echo "Root required" && exit 1
+(( $(id -u) != 0 )) && echo "Root required" && exit 1
 
 CleanUp() {
     rm -f "$tmp_file" 2>/dev/null 1>&2
@@ -36,6 +36,7 @@ do
     # Ignore these servers
     if [[ $REPLY == *'zxcvfdsa.com'* ]]
     then
+        failed_hosts=$((failed_hosts + 1))
         continue
     fi
 
@@ -49,16 +50,23 @@ do
         host_name=${host_name%%/*}
 
         IFS=' ' response=( $(curl -s -m 2 -w "%{time_total} %{http_code}" "https://${host_name}" -o /dev/null 2>/dev/null) )
+        #printf '%s\t%s\t%s\n' "$host_name" "${response[1]}" "${response[0]}" >&2
         
         if (( response[1] >= 400 || ! response[1] ))
         then
             failed_hosts=$((failed_hosts + 1))
-            echo "# $host_name returned ${response[1]}"
+            echo "# $host_name returned http code ${response[1]} after ${response[0]}s"
             continue
         elif (( response[1] <= 400 ))
         then
-            valid_hosts=$((valid_hosts + 1))
-            echo "$REPLY # ${response[0]}s"
+            # Ignore slower hosts (650ms round-trip or higher)
+            if (( $(bc <<< "${response[0]} > 0.650") ))
+            then
+                failed_hosts=$((failed_hosts + 1))
+            else
+                valid_hosts=$((valid_hosts + 1))
+                echo "$REPLY # ${response[0]}s"
+            fi
         fi
     }
 done < <(curl -sL "https://www.archlinux.org/mirrorlist/?country=BR&country=CA&country=DE&country=IE&country=NZ&country=GB&country=US&protocol=https&ip_version=4&use_mirror_status=on" 2>/dev/null) > "$tmp_file"
@@ -66,14 +74,12 @@ done < <(curl -sL "https://www.archlinux.org/mirrorlist/?country=BR&country=CA&c
 # If at least one host is found and all three "headers" were found (validate the response)
 if (( count_lines >= 4 && flag_header_found == 3 ))
 then
-    echo "$(( (count_lines - 3) - valid_hosts )) tested | $valid_hosts valid | $failed_hosts failed"
+    echo "$valid_hosts valid hosts | $failed_hosts failed hosts"
     [[ -f /etc/pacman.d/mirrorlist ]] && {
-        echo "sudo is required to backup existing mirrorlist"
-        sudo mv -v "/etc/pacman.d/mirrorlist" "/etc/pacman.d/mirrorlist~"
+        mv -v "/etc/pacman.d/mirrorlist" "/etc/pacman.d/mirrorlist~"
     }
-    
-    echo "sudo is required to update current mirrorlist"
-    if sudo mv -v "$tmp_file" "/etc/pacman.d/mirrorlist"
+
+    if mv -v "$tmp_file" "/etc/pacman.d/mirrorlist"
     then
         echo "Successfully updated mirrorlist"
     else
