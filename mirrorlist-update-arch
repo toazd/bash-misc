@@ -11,10 +11,11 @@ trap 'CleanUp' EXIT
 ! command -v curl 2>/dev/null 1>&2 && echo "curl required" && exit 1
 
 mirrorlist_url='https://www.archlinux.org/mirrorlist/?country=all&protocol=https&ip_version=4&use_mirror_status=on'
+mirrorlist_url='https://www.archlinux.org/mirrorlist/?country=CA&country=DE&country=IE&country=GB&country=US&protocol=https&ip_version=4&use_mirror_status=on'
 connect_timeout=3
 max_time=5
 tmp_file=/tmp/"$(basename "$0")"-"$(date '+%s')".tmp
-tmp_valid_hosts=/tmp/"$(basename "$0")"-valid_hosts-"$(date '+%s')".tmp
+##tmp_valid_hosts=/tmp/"$(basename "$0")"-valid_hosts-"$(date '+%s')".tmp
 flag_header_found=0
 count_lines=0
 valid_hosts=0
@@ -69,7 +70,7 @@ do
                 failed_hosts=$((failed_hosts + 1))
             else
                 valid_hosts=$((valid_hosts + 1))
-                echo "$REPLY # ${response[0]}s" >> "$tmp_valid_hosts"
+                echo "$REPLY" ##>> "$tmp_valid_hosts"
             fi
         fi
     }
@@ -78,8 +79,8 @@ done < <(curl -sL "$mirrorlist_url" 2>/dev/null) > "$tmp_file"
 # If at least one host is found and all three "headers" were found (validate the response)
 if (( count_lines >= 5 && flag_header_found == 3 ))
 then
-    sort -n -k5 "$tmp_valid_hosts" -o "$tmp_valid_hosts"
-    cut -d '#' -f 1 "$tmp_valid_hosts" >> "$tmp_file"
+    ##sort -n -k5 "$tmp_valid_hosts" -o "$tmp_valid_hosts"
+    ##cut -d '#' -f 1 "$tmp_valid_hosts" >> "$tmp_file"
     
     echo "$valid_hosts valid hosts | $failed_hosts failed hosts"
     [[ -f /etc/pacman.d/mirrorlist ]] && {
