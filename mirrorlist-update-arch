@@ -79,7 +79,7 @@ done < <(curl -sL "$mirrorlist_url" 2>/dev/null) > "$tmp_file"
 if (( count_lines >= 5 && flag_header_found == 3 ))
 then
     sort -n -k5 "$tmp_valid_hosts" -o "$tmp_valid_hosts"
-    cat "$tmp_valid_hosts" >> "$tmp_file"
+    cut -d '#' -f 1 "$tmp_valid_hosts" >> "$tmp_file"
     
     echo "$valid_hosts valid hosts | $failed_hosts failed hosts"
     [[ -f /etc/pacman.d/mirrorlist ]] && {
