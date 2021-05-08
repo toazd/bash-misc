@@ -7,7 +7,7 @@ mirror_status="on" # on|off
 protocol="&protocol=https" # &protocol=http
 ip_version="&ip_version=4" # &ip_version=6
 
-# Requirements
+# Requirements (curl, bc, write access to /etc/pacman.d/)
 if (( $(id -u) != 0 ))
 then
     printf '%s\n' "root required"
@@ -16,6 +16,10 @@ else
     ! command -v curl >/dev/null && {
         printf '%s\n' "curl required"
         exit 2
+    }
+    ! command -v bc >/dev/null && {
+        printf '%s\n' "bc required"
+        exit 3
     }
 fi
 
