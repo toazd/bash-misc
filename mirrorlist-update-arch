@@ -2,10 +2,8 @@
 #
 
 # main configuration
-country="US" # US|DE
-mirror_status="on" # on|off
-protocol="&protocol=https" # &protocol=http
-ip_version="&ip_version=4" # &ip_version=6
+#mirrorlist_url='https://www.archlinux.org/mirrorlist/?country=CA&country=DE&country=IE&country=GB&country=US&protocol=http&protocol=https&ip_version=4&use_mirror_status=on'
+mirrorlist_url="https://www.archlinux.org/mirrorlist/?country=US&protocol=https&ip_version=4&use_mirror_status=on"
 
 # Requirements (curl, bc, write access to /etc/pacman.d/)
 if (( $(id -u) != 0 ))
@@ -29,8 +27,6 @@ CleanUp() {
 }
 trap 'CleanUp' EXIT
 
-#mirrorlist_url='https://www.archlinux.org/mirrorlist/?country=CA&country=DE&country=IE&country=GB&country=US&protocol=http&protocol=https&ip_version=4&use_mirror_status=on'
-mirrorlist_url="https://www.archlinux.org/mirrorlist/?country=${country}${protocol}${ip_version}&use_mirror_status=${mirror_status}"
 connect_timeout=3
 max_time=5
 tmp_file=/tmp/mirrorlist-update-"$(date '+%s')".tmp
