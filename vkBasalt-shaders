@@ -2,9 +2,10 @@
 
 sSHADERS_PATH="/usr/share/reshade/shaders"
 
-for fxfile in "$sSHADERS_PATH"/*.fx; do
+for fxfile in "$sSHADERS_PATH"/*.fx
+do
     [[ -f $fxfile ]] && {
-        printf "%s = %s\n" "$(basename "${fxfile,,}" .fx)" "\"$fxfile\""
+        printf '%s = %s\n' "$(basename "${fxfile,,}" .fx)" "\"$fxfile\""
     }
 done
 
