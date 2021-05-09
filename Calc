@@ -1,1 +1,7 @@
-calc() { printf 'scale=2; %s\n' "$1" | bc; }
+#!/usr/bin/env bash
+
+calc() {
+    [ -n "$1" ] && {
+        printf 'scale=2; %s\n' "$1" | bc -l
+    }
+}
