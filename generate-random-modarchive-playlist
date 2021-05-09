@@ -25,7 +25,8 @@ printf "%s\n" "#EXTM3U" > "$sTMP_FILE"
 
 mapfile <<< "$(shuf --input-range=$iSHUF_RANGE_MIN-$iSHUF_RANGE_MAX --head-count=$iPLAYLIST_SONGS)"
 
-for (( iCOUNTER=0; iCOUNTER < iPLAYLIST_SONGS; iCOUNTER++ )); do
+for (( iCOUNTER=0; iCOUNTER < iPLAYLIST_SONGS; iCOUNTER++ ))
+do
     printf "%s" "$sMODARCHIVE_URL${MAPFILE[iCOUNTER]}" >> "$sTMP_FILE"
 done
 
