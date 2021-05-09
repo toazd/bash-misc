@@ -34,15 +34,20 @@ iDEBUG=0
 iINCLUDE_SCRIPT=0
 
 # Requires at least one parameter, the input file
-[[ -z $1 || ! -f $1 || ! -r $1 ]] && { echo "$0 <script>"; exit 0; }
+[[ -z $1 || ! -f $1 || ! -r $1 ]] && {
+    echo "$0 <script>"
+    exit 1
+}
 
 # Requires bc to calculate SLOC/comment and comment/SLOC ratios
-if ! command -v bc >/dev/null; then
+if ! command -v bc >/dev/null
+then
     echo "bc is required for ratio calculations"
 fi
 
 # Support multiple file inputs via shift'ing positional parameters as needed (eg. ./script-sloc *)
-while [[ -n $1 ]]; do
+while [[ -n $1 ]]
+do
 
     # If not a file, skip
     [[ ! -f $1 ]] && { shift; continue; }
@@ -62,20 +67,24 @@ while [[ -n $1 ]]; do
 
     # If debug is enabled, remove existing output files for the current file
     [[ $iDEBUG -eq 1 ]] && {
-        for slocfile in "$1.sloc"*; do
+        for slocfile in "$1.sloc"*
+        do
             [[ -f $slocfile ]] && rm -v "$slocfile"
         done
     }
 
     # Begin reading the current file, one line at a time
-    while IFS= read -r line; do
+    while IFS= read -r line
+    do
 
         # Increment the total lines counter
         total_lines=$(( total_lines + 1 ))
 
         # If the first line doesn't begin with exactly #!/ then skip this file
-        if [[ $total_lines -eq 1 ]]; then
-            if [[ $line != '#!/'* ]]; then
+        if [[ $total_lines -eq 1 ]]
+        then
+            if [[ $line != '#!/'* ]]
+            then
                 echo "$1: Shebang not found"
                 shift
                 break 1
@@ -96,7 +105,8 @@ while [[ -n $1 ]]; do
         }
 
         # If we're not inside a heredoc
-        if [[ $heredoc -eq 0 ]]; then
+        if [[ $heredoc -eq 0 ]]
+        then
             [[ -z $line ]] && {
 
                 # Increment the empty line counter
@@ -132,7 +142,8 @@ while [[ -n $1 ]]; do
                 [[ $iDEBUG -eq 1 ]] && printf '%s\n' "[$total_lines]$line" >> "$1".sloc.inline_comments
             }
         # If we are inside a heredoc
-        elif [[ $heredoc -eq 1 ]]; then
+        elif [[ $heredoc -eq 1 ]]
+        then
 
             # If debug is enabled, log lines considered to be part of a heredoc
             [[ $iDEBUG -eq 1 ]] && printf '%s\n' "[$total_lines]$line" >> "$1".sloc.heredoc
@@ -192,7 +203,8 @@ while [[ -n $1 ]]; do
     done < "$1"
 
     # This particular script can't process one line scripts
-    if [[ $total_lines -gt 1 ]]; then
+    if [[ $total_lines -gt 1 ]]
+    then
 
         # Exclude the shebang line from calculations
         total_lines=$(( total_lines - 1 ))
@@ -223,7 +235,8 @@ while [[ -n $1 ]]; do
 
     # If the current file has a shebang and also contains zero or one newlines
     # this script can't process it
-    elif [[ $total_lines -lt 1 ]]; then
+    elif [[ $total_lines -lt 1 ]]
+    then
         echo "$1: Unable to process"
     fi
 
