@@ -28,31 +28,40 @@ declare -i ignore_empty=1 # 1 = Ignore (preserve) empty lines, 0 = Do not ignore
 declare -i remove_empty=1 # 1 = Remove all empty lines, 0 = De-duplicate empty lines
 
 # No parameters, show usage
-(( $# < 1 )) && { echo "${0##*/} <file> ..."; exit 1; }
+(( $# < 1 )) && {
+    printf '%s\n' "${0##*/} <file> ..."
+    exit 1
+}
 
 # ignore_empty and remove_empty must be either 1 or 0
-if (( ignore_empty < 0 || ignore_empty > 1 )) || (( remove_empty < 0 || remove_empty > 1 )); then
-    echo "Invalid value(s) for ignore_empty ($ignore_empty) or remove_empty ($ignore_empty)"
+if (( ignore_empty < 0 || ignore_empty > 1 )) || (( remove_empty < 0 || remove_empty > 1 ))
+then
+    printf '%s\n' "Invalid value(s) for ignore_empty ($ignore_empty) or remove_empty ($ignore_empty)"
     exit 1
 fi
 
 # Report how empty lines will be treated
-if (( ignore_empty == 1 )); then
-    echo "Empty lines will be preserved"
-elif (( ignore_empty == 0 )); then
-    if (( remove_empty == 1 )); then
-        echo "All empty lines will be removed"
-    elif (( remove_empty == 0 )); then
-        echo "Empty lines will be de-duplicated"
+if (( ignore_empty == 1 ))
+then
+    printf '%s\n' "Empty lines will be preserved"
+elif (( ignore_empty == 0 ))
+then
+    if (( remove_empty == 1 ))
+    then
+        printf '%s\n' "All empty lines will be removed"
+    elif (( remove_empty == 0 ))
+    then
+        printf '%s\n' "Empty lines will be de-duplicated"
     fi
 fi
 
 # Begin looping over positional parameters
-while [[ $1 ]]; do
+while [[ $1 ]]
+do
 
     # If the parameter is not a file or the script cannot read from it
     [[ ! -f $1 || ! -r $1 ]] && {
-        echo "Unable to process $1 (not a file or no read access)"
+        printf '%s\n' "Unable to process $1 (not a file or no read access)"
         shift
         continue
     }
@@ -65,8 +74,9 @@ while [[ $1 ]]; do
     unique_list=()
 
     # If the specified file has 0 or 1 line(s) it cannot/doesn't need to be processed
-    if (( lines_in <= 1 )); then
-        echo "Unable to process $file_in (lines: $lines_in)"
+    if (( lines_in <= 1 ))
+    then
+        printf '%s\n' "Unable to process $file_in (lines: $lines_in)"
         shift
         continue
     fi
@@ -76,39 +86,44 @@ while [[ $1 ]]; do
 
     # Print a report of what's being worked on next and save the cursor position
     printf '%s\n%s\n%s\033[s' "Input: $file_in" "Temp: $file_out" "Processing $file_in"
-    while IFS= read -r --; do
+    while IFS= read -r --
+    do
 
         # Increment total line counter
         ((i++))
 
         # Update the current progress in %
         progress=$(( ( i * 100 ) / lines_in ))
+
         # Print progress only when it changes
         (( progress != prev_progress )) && printf '\033[u\033[s%s' "...$progress%" 1>&2
         prev_progress=$progress
 
         # If ignore_empty = 0 then check remove_empty
-        if (( ignore_empty == 0 )); then
+        if (( ignore_empty == 0 ))
+        then
             # If remove_empty = 0 and this line is blank, skip to the next line
-            if (( remove_empty == 1 )) && [[ -z $REPLY ]]; then
-                continue
-            fi
+            [[ $remove_empty -eq 1 && -z $REPLY ]] && continue
         fi
 
         # Search each element of the unique list array
-        for element in "${unique_list[@]}"; do
+        for element in "${unique_list[@]}"
+        do
 
             # If this line is not empty, check if it's a duplicate
-            if [[ -n $REPLY ]]; then
+            if [[ -n $REPLY ]]
+            then
                 # If this line is a duplicate, skip to the next line
                 [[ $REPLY = "$element" ]] && continue 2
             # The line is empty
             else
                 # If we are ignoring (preserving) blanks, break
-                if (( ignore_empty == 1 )); then
+                if (( ignore_empty == 1 ))
+                then
                     break
                 # If we are not ignoring blanks, check if it's a duplicate
-                elif (( ignore_empty == 0 )); then
+                elif (( ignore_empty == 0 ))
+                then
                     # If this line is a duplicate, skip to the next line
                     [[ $REPLY = "$element" ]] && continue 2
                 fi
@@ -119,7 +134,8 @@ while [[ $1 ]]; do
         unique_list+=("$REPLY")
 
         # Don't print a trailing newline unless the source file contained one
-        if (( i != lines_in )); then
+        if (( i != lines_in ))
+        then
             printf '%s\n' "$REPLY" 2>/dev/null
         else
             printf '%s' "$REPLY" 2>/dev/null
@@ -133,8 +149,10 @@ while [[ $1 ]]; do
 
         # If more than 0 lines were removed, backup the source file
         # and replace the original with the temp file
-        if (( $(( i - ${#unique_list[@]} )) > 0 )); then
-            if mv -v "$file_in" "$file_in"~; then
+        if (( $(( i - ${#unique_list[@]} )) > 0 ))
+        then
+            if mv -v "$file_in" "$file_in"~
+            then
                 mv -v "$file_out" "$file_in"
             fi
         # If no lines were removed, remove the temp file
