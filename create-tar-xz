@@ -5,7 +5,7 @@ archive=${2-}
 compression_level=${3:-6}
 threads=${4:-0}
 
-[[ -z $1 || $# -gt 4 || $# -lt 2 || ! -e $to_compress || -f "$archive".tar.xz ]] && {
+[[ -z $1 || $# -gt 4 || $# -lt 2 || ! -e $to_compress || -f $archive.tar.xz ]] && {
     printf '%s\n' "${0##*'/'} <to_compress> <new_file> <compression level 0-9(6)> <threads(0)>"
     exit 1
 }
