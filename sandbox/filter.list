@@ -12,14 +12,12 @@ https://iplists.firehol.org/files/normshield_high_attack.ipset
 https://iplists.firehol.org/files/normshield_high_bruteforce.ipset
 https://iplists.firehol.org/files/spamhaus_edrop.netset
 https://iplists.firehol.org/files/urlvir.ipset
-#
 https://raw.githubusercontent.com/ktsaou/blocklist-ipsets/master/firehol_level1.netset
 https://gist.githubusercontent.com/BBcan177/d7105c242f17f4498f81/raw
 https://www.cidr-report.org/bogons/freespace-prefix.txt
 https://iplists.firehol.org/files/graphiclineweb.netset
 https://iplists.firehol.org/files/esentire_crazyerror_su.ipset
 https://iplists.firehol.org/files/esentire_dorttlokolrt_com.ipset
-#
 https://iplists.firehol.org/files/gofferje_sip.netset
 https://raw.githubusercontent.com/eSentire/malfeed/master/maddox1.ru_watch_ip.lst
 https://iplists.firehol.org/files/iblocklist_pedophiles.netset
@@ -27,7 +25,5 @@ https://raw.githubusercontent.com/eSentire/malfeed/master/downs1.ru_watch_ip.lst
 https://www.badips.com/get/list/ssh-ddos/0?age=1d
 https://raw.githubusercontent.com/eSentire/malfeed/master/manning1.ru_watch_ip.lst
 http://www.darklist.de/raw.php
-#
 http://lists.blocklist.de/lists/apache.txt
 http://blocklist.de/lists/all.txt
-#
