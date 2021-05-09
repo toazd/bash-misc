@@ -6,14 +6,14 @@ compression_level=${3:-6}
 threads=${4:-0}
 
 [[ -z $1 || $# -gt 4 || $# -lt 2 || ! -e $to_compress || -f "$archive".tar.xz ]] && {
-    echo "$(basename "$0") <to_compress> <new_file> <compression level 0-9(6)> <threads(0)>"
+    printf '%s\n' "${0##*'/'} <to_compress> <new_file> <compression level 0-9(6)> <threads(0)>"
     exit 1
 }
 
 # Invalid integer provided for compression level
 (( compression_level < 0 || compression_level > 9 )) && {
-    echo "Invalid compression level requested (valid range 0-9): \"$compression_level\""
-    exit 1
+    printf '%s\n' "Invalid compression level requested (valid range 0-9): \"$compression_level\""
+    exit 2
 }
 
 # If .tar.xz was provided remove it
