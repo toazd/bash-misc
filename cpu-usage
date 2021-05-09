@@ -24,8 +24,9 @@ sAVG_LINE=${sAVG_LINE##* }
 # round to 0 decimals (to avoid showing extraneous zeros *.0%), left bound the field (aligns better with icons/glyphs)
 sCPU_USAGE=$(printf '%-.0f' "$(bc -l <<< 100-"${sAVG_LINE}")")%
 
-if [[ ${sCPU_USAGE:0:1} -eq 0 ]]; then
-    echo "<1%"
+if [[ ${sCPU_USAGE:0:1} -eq 0 ]]
+then
+    printf '%s\n' "<1%"
 else
-    echo "$sCPU_USAGE"
+    printf '%s\n' "$sCPU_USAGE"
 fi
